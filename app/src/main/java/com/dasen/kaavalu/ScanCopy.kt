@@ -75,6 +75,90 @@ object ScanCopy {
         "kn" -> "ನೀವು ಹೇಳಿದ್ದು"; "hi" -> "आपने जो कहा"; else -> "What you said"
     }
 
+    // --- the screen itself ----------------------------------------------------------
+
+    fun screenTitle(lang: String) = when (lang) {
+        "kn" -> "ಈ ನೋಟಿಸ್ ನಿಜವೇ?"
+        "hi" -> "क्या यह नोटिस असली है?"
+        else -> "Is this notice real?"
+    }
+
+    fun screenLead(lang: String) = when (lang) {
+        "kn" -> "ಪರಿಶೀಲನೆ ಇದೇ ಫೋನಿನಲ್ಲಿ. ಏನನ್ನೂ ಅಪ್‌ಲೋಡ್ ಮಾಡುವುದಿಲ್ಲ."
+        "hi" -> "जाँच इसी फ़ोन पर होती है। कुछ भी अपलोड नहीं होता।"
+        else -> "Checked on this phone. Nothing is uploaded."
+    }
+
+    fun framingHint(lang: String) = when (lang) {
+        "kn" -> "ಪುಟದಿಂದ ಫ್ರೇಮ್ ತುಂಬಿಸಿ. ಸ್ಪಷ್ಟವಾಗಿರಲಿ."
+        "hi" -> "पन्ने से पूरा फ़्रेम भरिए। साफ़ रखिए।"
+        else -> "Fill the frame with the page. Keep it sharp."
+    }
+
+    fun takePhoto(lang: String, retake: Boolean) = when {
+        retake && lang == "kn" -> "ಮತ್ತೆ ಫೋಟೋ ತೆಗೆಯಿರಿ"
+        retake && lang == "hi" -> "फ़ोटो दोबारा लीजिए"
+        retake -> "Take the photo again"
+        lang == "kn" -> "ನೋಟಿಸ್ ಫೋಟೋ ತೆಗೆಯಿರಿ"
+        lang == "hi" -> "नोटिस की फ़ोटो लीजिए"
+        else -> "Photograph the notice"
+    }
+
+    fun pickScreenshot(lang: String) = when (lang) {
+        "kn" -> "ಸ್ಕ್ರೀನ್‌ಶಾಟ್ ಆರಿಸಿ"
+        "hi" -> "स्क्रीनशॉट चुनिए"
+        else -> "Choose a screenshot"
+    }
+
+    fun evidenceHeading(lang: String) = when (lang) {
+        "kn" -> "ಕಾವಲು ಕಂಡುಕೊಂಡದ್ದು"
+        "hi" -> "कावलु को क्या मिला"
+        else -> "What Kaavalu found"
+    }
+
+    // --- the explainer at the foot of the scan screen --------------------------------
+
+    fun looksForHeading(lang: String) = when (lang) {
+        "kn" -> "ಕಾವಲು ಏನನ್ನು ಹುಡುಕುತ್ತದೆ"
+        "hi" -> "कावलु क्या देखता है"
+        else -> "What Kaavalu looks for"
+    }
+
+    fun looksForLead(lang: String) = when (lang) {
+        "kn" -> "ವಂಚನೆಯ ನೋಟಿಸ್‌ಗಳು ಇವುಗಳಲ್ಲಿ ಹಲವನ್ನು ಒಟ್ಟಿಗೆ ಬಳಸುತ್ತವೆ. ಒಂದೇ ಒಂದು ಇದ್ದರೆ ಸಾಮಾನ್ಯವಾಗಿ ಅಪಾಯವಿಲ್ಲ."
+        "hi" -> "ठगी के नोटिस इनमें से कई एक साथ इस्तेमाल करते हैं। अकेला एक लक्षण आमतौर पर बेकार है।"
+        else -> "Scam notices use several of these together. One on its own is usually harmless."
+    }
+
+    /** One line per core cue, saying what that pressure looks like on paper. */
+    fun looksLike(lang: String, cueName: String): String = when (cueName) {
+        "AUTHORITY" -> when (lang) {
+            "kn" -> "ಸಂಸ್ಥೆ, ನ್ಯಾಯಾಲಯ ಅಥವಾ ಅಧಿಕಾರಿಯ ಹೆಸರು ಹೇಳುತ್ತದೆ"
+            "hi" -> "किसी एजेंसी, अदालत या अधिकारी का नाम लेता है"
+            else -> "Names an agency, a court or an officer"
+        }
+        "THREAT" -> when (lang) {
+            "kn" -> "ಬಂಧನ, ಜೈಲು, ಸಿಮ್ ಬಂದ್, ಖಾತೆ ಸ್ಥಗಿತ"
+            "hi" -> "गिरफ़्तारी, जेल, सिम बंद, खाता फ़्रीज़"
+            else -> "Arrest, jail, a blocked SIM, a frozen account"
+        }
+        "MONEY" -> when (lang) {
+            "kn" -> "ಶುಲ್ಕ, ವರ್ಗಾವಣೆ, ಕ್ಯೂಆರ್ ಕೋಡ್, ಓಟಿಪಿ"
+            "hi" -> "फ़ीस, पैसे भेजना, क्यूआर कोड, ओटीपी"
+            else -> "A fee, a transfer, a QR code, an OTP"
+        }
+        "SECRECY" -> when (lang) {
+            "kn" -> "ಕುಟುಂಬದವರಿಗೆ ಹೇಳಬೇಡಿ ಎನ್ನುತ್ತದೆ"
+            "hi" -> "परिवार को न बताने के लिए कहता है"
+            else -> "Tells you not to involve your family"
+        }
+        else -> when (lang) {
+            "kn" -> "ಸಮಯದ ಒತ್ತಡ ಹಾಕುತ್ತದೆ"
+            "hi" -> "समय की घड़ी लगा देता है"
+            else -> "Puts a clock on it"
+        }
+    }
+
     // --- the verdicts -------------------------------------------------------------
     // English here is the wording already on the screen, kept verbatim so the three
     // languages stay one voice and nobody has to diff two copies of the same sentence.

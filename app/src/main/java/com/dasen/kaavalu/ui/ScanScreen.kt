@@ -86,6 +86,7 @@ import java.io.File
  */
 @Composable
 fun ScanScreen(onBack: () -> Unit) {
+    val lang = Prefs.language(LocalContext.current)
     val ctx = LocalContext.current
     val scope = rememberCoroutineScope()
     val scanner = remember { NoticeScanner() }
@@ -153,8 +154,8 @@ fun ScanScreen(onBack: () -> Unit) {
 
     ScreenColumn(spacing = Space.lg) {
         ScreenTitle(
-            title = "Is this notice real?",
-            lead = "Checked on this phone. Nothing is uploaded.",
+            title = ScanCopy.screenTitle(lang),
+            lead = ScanCopy.screenLead(lang),
         )
 
         Inspector(phase, preview)
@@ -266,6 +267,7 @@ private suspend fun decodePreview(ctx: android.content.Context, uri: Uri): Image
  */
 @Composable
 private fun Inspector(phase: ScanPhase, preview: ImageBitmap?) {
+    val lang = Prefs.language(LocalContext.current)
     val tall = phase is ScanPhase.Ready || phase is ScanPhase.Failed || phase is ScanPhase.Reading
     val height = when {
         phase is ScanPhase.Done && preview == null -> 0.dp
@@ -302,7 +304,7 @@ private fun Inspector(phase: ScanPhase, preview: ImageBitmap?) {
                     Icon(painterResource(R.drawable.ic_nav_scan), null, tint = Muted, modifier = Modifier.size(40.dp))
                     Spacer(Modifier.height(Space.sm))
                     Text(
-                        "Fill the frame with the page. Keep it sharp.",
+                        ScanCopy.framingHint(lang),
                         style = MaterialTheme.typography.bodyMedium,
                         color = Muted,
                     )
@@ -345,15 +347,16 @@ private fun Inspector(phase: ScanPhase, preview: ImageBitmap?) {
 
 @Composable
 private fun CaptureActions(onPhotograph: () -> Unit, onPick: () -> Unit, retake: Boolean = false) {
+    val lang = Prefs.language(LocalContext.current)
     Column(verticalArrangement = Arrangement.spacedBy(Space.sm)) {
         BigAction(
-            if (retake) "Take the photo again" else "Photograph the notice",
+            ScanCopy.takePhoto(lang, retake),
             icon = R.drawable.ic_camera,
             critical = true,
             onClick = onPhotograph,
         )
         BigAction(
-            "Choose a screenshot",
+            ScanCopy.pickScreenshot(lang),
             style = ActionStyle.Secondary,
             icon = R.drawable.ic_image,
             critical = true,
@@ -441,7 +444,7 @@ private fun VerdictSheet(r: ScanResult) {
         if (lines.isNotEmpty()) {
             Spacer(Modifier.height(Space.xxs))
             Text(
-                "What Kaavalu found",
+                ScanCopy.evidenceHeading(lang),
                 style = MaterialTheme.typography.titleMedium,
                 color = Ink,
                 modifier = Modifier.semantics { heading() },
@@ -483,21 +486,18 @@ internal fun Instruction(text: String, tone: Tone) {
  */
 @Composable
 private fun WhatItLooksFor() {
+    val lang = Prefs.language(LocalContext.current)
     Column(verticalArrangement = Arrangement.spacedBy(Space.sm)) {
-        SectionTitle("What Kaavalu looks for")
+        SectionTitle(ScanCopy.looksForHeading(lang))
         Text(
-            "Scam notices use several of these together. One on its own is usually harmless.",
+            ScanCopy.looksForLead(lang),
             style = MaterialTheme.typography.bodyMedium,
             color = Muted,
         )
         Sheet(padding = Space.lg, spacing = 0.dp) {
-            listOf(
-                "Authority" to "Names an agency, a court or an officer",
-                "Threat" to "Arrest, jail, a blocked SIM, a frozen account",
-                "Money" to "A fee, a transfer, a QR code, an OTP",
-                "Secrecy" to "Tells you not to involve your family",
-                "Urgency" to "Puts a clock on it",
-            ).forEachIndexed { i, (cue, what) ->
+            listOf("AUTHORITY", "THREAT", "MONEY", "SECRECY", "URGENCY").map {
+                ScanCopy.cue(lang, it) to ScanCopy.looksLike(lang, it)
+            }.forEachIndexed { i, (cue, what) ->
                 if (i > 0) HRule()
                 Row(
                     Modifier.fillMaxWidth().padding(vertical = Space.sm).semantics(mergeDescendants = true) {},
