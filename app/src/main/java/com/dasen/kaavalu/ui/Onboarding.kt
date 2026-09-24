@@ -59,8 +59,13 @@ import androidx.compose.ui.semantics.liveRegion
  * live and lets any one of them be fixed without starting over.
  */
 @Composable
-fun Onboarding(firstRun: Boolean = true, onOpenDemo: () -> Unit = {}, onDone: () -> Unit) {
-    if (firstRun) FirstRunLadder(onDone) else SetupChecklist(onOpenDemo)
+fun Onboarding(
+    firstRun: Boolean = true,
+    onOpenDemo: () -> Unit = {},
+    onStartOver: () -> Unit = {},
+    onDone: () -> Unit,
+) {
+    if (firstRun) FirstRunLadder(onDone) else SetupChecklist(onOpenDemo, onStartOver)
 }
 
 @Composable
@@ -212,7 +217,7 @@ private fun FirstRunLadder(onDone: () -> Unit) {
  * looking for the one specific thing that broke, not a six-screen wizard.
  */
 @Composable
-private fun SetupChecklist(onOpenDemo: () -> Unit) {
+private fun SetupChecklist(onOpenDemo: () -> Unit, onStartOver: () -> Unit) {
     val ctx = LocalContext.current
     var refresh by remember { mutableIntStateOf(0) }
     var editing by rememberSaveable { mutableStateOf(false) }
@@ -375,6 +380,57 @@ private fun SetupChecklist(onOpenDemo: () -> Unit) {
             style = KType.utility,
             color = Muted,
         )
+
+        StartOver(onStartOver)
+    }
+}
+
+/**
+ * Clearing the phone back to its first screen. Last on the page and asked twice, in place
+ * rather than in a pop-up: it cannot be undone, and the confirmation should say exactly
+ * what goes, where the person is already looking.
+ */
+@Composable
+private fun StartOver(onStartOver: () -> Unit) {
+    var confirming by rememberSaveable { mutableStateOf(false) }
+    Column(verticalArrangement = Arrangement.spacedBy(Space.sm)) {
+        HRule(Modifier.padding(vertical = Space.sm), colour = Line)
+        SectionTitle("Start over")
+        Text(
+            "For a new person, or to show setup from the first screen. Permissions stay " +
+                "granted, so each step will already be on.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = Muted,
+        )
+        val inMs = motion(Motion.STANDARD)
+        val outMs = motion(Motion.QUICK)
+        AnimatedContent(
+            targetState = confirming,
+            transitionSpec = { fadeIn(tween(inMs)) togetherWith fadeOut(tween(outMs)) },
+            label = "startOver",
+        ) { asking ->
+            if (!asking) {
+                BigAction("Start over", style = ActionStyle.Secondary) { confirming = true }
+            } else {
+                Well(padding = Space.lg) {
+                    Text("Clear everything on this phone?", style = MaterialTheme.typography.titleLarge, color = Alarm900)
+                    Text(
+                        "The name, family number, language, trusted numbers and call history " +
+                            "are deleted. Protection stops until setup is finished again. This " +
+                            "cannot be undone.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Ink2,
+                    )
+                    Spacer(Modifier.height(Space.xs))
+                    BigAction("Clear and start over", style = ActionStyle.Danger, onClick = onStartOver)
+                    BigAction(
+                        "Keep everything",
+                        style = ActionStyle.Ghost,
+                        textStyle = MaterialTheme.typography.titleMedium,
+                    ) { confirming = false }
+                }
+            }
+        }
     }
 }
 
