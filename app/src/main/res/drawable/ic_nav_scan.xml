@@ -1,10 +1,13 @@
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp" android:height="24dp"
     android:viewportWidth="24" android:viewportHeight="24">
-    <path android:fillColor="@android:color/white"
-        android:pathData="M4,3 L14,3 L20,9 L20,21 L4,21 Z M14,3 L14,9 L20,9" />
-    <path android:fillColor="@android:color/white"
-        android:pathData="M6.5,12 L14.5,12 L14.5,13.6 L6.5,13.6 Z" />
-    <path android:fillColor="@android:color/white"
-        android:pathData="M6.5,15.4 L12.5,15.4 L12.5,17 L6.5,17 Z" />
+    <!-- One path, evenOdd: the text lines and the folded corner are holes, so the icon
+         still reads correctly when the navigation bar tints it a single colour. -->
+    <path
+        android:fillColor="@android:color/white"
+        android:fillType="evenOdd"
+        android:pathData="M5,2 L14,2 L19.5,7.5 L19.5,22 L5,22 Z
+                          M13.6,3.6 L13.6,8 L18,8 L13.6,3.6 Z
+                          M7.6,12 L16.4,12 L16.4,13.7 L7.6,13.7 Z
+                          M7.6,15.6 L13.6,15.6 L13.6,17.3 L7.6,17.3 Z" />
 </vector>

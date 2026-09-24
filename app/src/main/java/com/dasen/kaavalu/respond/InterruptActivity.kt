@@ -55,15 +55,23 @@ class InterruptActivity : ComponentActivity() {
 
         setContent {
             val s by engine.state.collectAsStateWithLifecycle()
+            // The three actions are pinned to the bottom and only the reasons scroll.
+            // At 100/100 there are five reasons, and in the scrolling version they pushed
+            // "Call my family" off the screen: the one moment the button has to be within
+            // thumb's reach is the moment there is the most evidence to show.
             Column(
                 Modifier
                     .fillMaxSize()
-                    .background(Alarm)
-                    .verticalScroll(rememberScrollState())
-                    .padding(24.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
+                    .background(Alarm),
             ) {
-                Spacer(Modifier.height(24.dp))
+                Column(
+                    Modifier
+                        .weight(1f)
+                        .verticalScroll(rememberScrollState())
+                        .padding(horizontal = 24.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                ) {
+                    Spacer(Modifier.height(32.dp))
 
                 Text(
                     Copy.interruptTitle(lang),
@@ -105,30 +113,37 @@ class InterruptActivity : ComponentActivity() {
                     }
                 }
 
-                Text(
-                    Copy.uncertainty(lang),
-                    color = Color.White.copy(alpha = 0.85f),
-                    fontSize = 14.sp,
-                    lineHeight = 20.sp,
-                )
+                    Text(
+                        Copy.uncertainty(lang),
+                        color = Color.White.copy(alpha = 0.85f),
+                        fontSize = 14.sp,
+                        lineHeight = 20.sp,
+                    )
 
-                Spacer(Modifier.height(8.dp))
-
-                BigButton(Copy.callFamily(lang), Color.White, Alarm) {
-                    Prefs.guardian(this@InterruptActivity)?.let { dial(it) }
+                    Spacer(Modifier.height(8.dp))
                 }
-                BigButton(Copy.callHelpline(lang), Gold, Color.Black) { dial("1930") }
-                TextButton(
-                    onClick = {
-                        s.caller?.let { Prefs.trust(this@InterruptActivity, it) }
-                        SignalBus.emit(Signal.MarkedSafe)
-                        finish()
-                    },
-                    modifier = Modifier.fillMaxWidth(),
+
+                // Pinned. Always reachable, however many reasons there are to show.
+                Column(
+                    Modifier.padding(horizontal = 24.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
-                    Text(Copy.knownPerson(lang), color = Color.White, fontSize = 16.sp)
+                    BigButton(Copy.callFamily(lang), Color.White, Alarm) {
+                        Prefs.guardian(this@InterruptActivity)?.let { dial(it) }
+                    }
+                    BigButton(Copy.callHelpline(lang), Gold, Color.Black) { dial("1930") }
+                    TextButton(
+                        onClick = {
+                            s.caller?.let { Prefs.trust(this@InterruptActivity, it) }
+                            SignalBus.emit(Signal.MarkedSafe)
+                            finish()
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text(Copy.knownPerson(lang), color = Color.White, fontSize = 16.sp)
+                    }
+                    Spacer(Modifier.height(16.dp))
                 }
-                Spacer(Modifier.height(16.dp))
             }
         }
     }

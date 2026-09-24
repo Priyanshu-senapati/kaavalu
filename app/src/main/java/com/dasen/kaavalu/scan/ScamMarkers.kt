@@ -80,9 +80,26 @@ object ScamMarkers {
             r("""do not (disclose|share|tell|inform)|tell no ?one|not inform anyone|confidential|secrecy|national secret|गोपनीय|किसी को मत बताना|ಯಾರಿಗೂ ಹೇಳಬೇಡಿ"""), 25,
             "Demands secrecy. Real agencies never forbid you from telling your family.",
         ),
+        // Single tokens, not exact phrases. OCR of a real photographed ED order returned
+        // "afrest w artant" for "arrest warrant", so any pattern that needs the two words
+        // adjacent and correctly spelled matches nothing at all on a real photo.
         Marker(
-            r("""arrest warrant|warrant of arrest|non[- ]bailable|\bsummons\b|fir (has been )?(registered|lodged)|गिरफ्तार|गिरफ़्तार|वारंट|ಬಂಧನ"""), 25,
-            "Threatens arrest or a case against you.",
+            r("""\barrest(ed|s|ing)?\b|गिरफ्तार|गिरफ़्तार|ಬಂಧನ"""), 22,
+            "Talks about arresting you. No agency arrests anyone over a phone or a message.",
+        ),
+        Marker(
+            r("""\bwarrant\b|\bsummons\b|non[- ]?bailable|\bf\.?i\.?r\.?\b|वारंट"""), 20,
+            "Presents itself as a warrant, summons or FIR.",
+        ),
+        // The agencies these documents impersonate, in the word order they actually print:
+        // the real letterhead reads "Directorate of Enforcement", not "Enforcement Directorate".
+        Marker(
+            r("""directorate\s+of\s+enforcement|enforcement\s+directorate|\becir\b|central bureau of investigation"""), 20,
+            "Claims to come from the ED or CBI. They do not send orders to your phone.",
+        ),
+        Marker(
+            r("""assistant director|investigating officer|deputy director|joint director"""), 8,
+            "Signed off with an official-sounding rank.",
         ),
         Marker(
             r("""otp|one time password|\bcvv\b|\bpin\b|share the code|verification code|ओटीपी|ಓಟಿಪಿ"""), 22,
@@ -97,7 +114,8 @@ object ScamMarkers {
             "Brings up your Aadhaar or PAN. Agencies do not call or message about these.",
         ),
         Marker(
-            r("""money laundering|\bpmla\b|\bndps\b|narcotics|contraband|illegal (activity|transaction)|मनी लॉन्ड्रिंग"""), 20,
+            // la[a-z]{0,2}dering so that OCR reading "Money Lamdering" still matches.
+            r("""money\s+la[a-z]{0,2}dering|prevention of money|\bpmla\b|\bndps\b|narcotics|contraband|illegal (activity|transaction)|मनी लॉन्ड्रिंग"""), 20,
             "Accuses you of laundering or drug offences, a standard line in the script.",
         ),
         Marker(

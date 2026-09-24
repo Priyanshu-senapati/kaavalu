@@ -215,10 +215,13 @@ private fun WhyItMattersCard() {
                 "Why this is on your phone",
                 style = MaterialTheme.typography.titleMedium,
             )
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Stat("Rs 1,935 cr", "lost to this scam\nin 2024")
-                Stat("1.2 lakh", "families, in\none year")
-                Stat("21x", "growth since\n2022")
+            Row(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                Stat(Modifier.weight(1f), "Rs 1,935cr", "lost in 2024")
+                Stat(Modifier.weight(1f), "1.2 lakh", "families hit")
+                Stat(Modifier.weight(1f), "21x", "since 2022")
             }
             HorizontalDivider(color = Color(0xFFE8E2D8))
             Text(
@@ -233,10 +236,17 @@ private fun WhyItMattersCard() {
 }
 
 @Composable
-private fun Stat(figure: String, caption: String) {
-    Column(horizontalAlignment = Alignment.Start, modifier = Modifier.width(96.dp)) {
-        Text(figure, style = MaterialTheme.typography.titleLarge, color = Alarm)
-        Text(caption, style = MaterialTheme.typography.bodySmall, color = Muted)
+private fun Stat(modifier: Modifier, figure: String, caption: String) {
+    // Weighted, not fixed-width: "Rs 1,935cr" wrapped onto two lines and collided with
+    // its caption at 96dp on a real phone.
+    Column(modifier, horizontalAlignment = Alignment.Start) {
+        Text(
+            figure,
+            style = MaterialTheme.typography.titleMedium,
+            color = Alarm,
+            maxLines = 1,
+        )
+        Text(caption, style = MaterialTheme.typography.bodySmall, color = Muted, maxLines = 2)
     }
 }
 

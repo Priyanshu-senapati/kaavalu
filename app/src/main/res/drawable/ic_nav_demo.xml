@@ -1,12 +1,16 @@
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp" android:height="24dp"
     android:viewportWidth="24" android:viewportHeight="24">
-    <path android:fillColor="@android:color/white"
-        android:pathData="M3,6 L13,6 L13,8 L3,8 Z M17,6 L21,6 L21,8 L17,8 Z" />
-    <path android:fillColor="@android:color/white"
-        android:pathData="M15,4 m-2.2,0 a2.2,2.2 0 1,0 4.4,0 a2.2,2.2 0 1,0 -4.4,0 Z" />
-    <path android:fillColor="@android:color/white"
-        android:pathData="M3,16 L7,16 L7,18 L3,18 Z M11,16 L21,16 L21,18 L11,18 Z" />
-    <path android:fillColor="@android:color/white"
-        android:pathData="M9,17 m-2.2,0 a2.2,2.2 0 1,0 4.4,0 a2.2,2.2 0 1,0 -4.4,0 Z" />
+    <!-- Sliders. evenOdd so the knob centres stay hollow under a flat tint. -->
+    <path
+        android:fillColor="@android:color/white"
+        android:fillType="evenOdd"
+        android:pathData="M3,6.2 L11,6.2 L11,7.8 L3,7.8 Z
+                          M18,6.2 L21,6.2 L21,7.8 L18,7.8 Z
+                          M14.5,7 m-3.2,0 a3.2,3.2 0 1,0 6.4,0 a3.2,3.2 0 1,0 -6.4,0 Z
+                          M14.5,7 m-1.5,0 a1.5,1.5 0 1,0 3,0 a1.5,1.5 0 1,0 -3,0 Z
+                          M3,16.2 L6,16.2 L6,17.8 L3,17.8 Z
+                          M13,16.2 L21,16.2 L21,17.8 L13,17.8 Z
+                          M9.5,17 m-3.2,0 a3.2,3.2 0 1,0 6.4,0 a3.2,3.2 0 1,0 -6.4,0 Z
+                          M9.5,17 m-1.5,0 a1.5,1.5 0 1,0 3,0 a1.5,1.5 0 1,0 -3,0 Z" />
 </vector>

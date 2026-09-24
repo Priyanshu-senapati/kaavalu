@@ -38,7 +38,9 @@ class NoticeScanner {
         // Diagnostics: when a scan gets the wrong answer, this is the only way to know
         // whether OCR failed or the marker list is short. adb logcat -s KaavaluScan
         Log.d(TAG, "read ${text.length} chars, score ${result.score}, verdict ${result.verdict}")
-        Log.d(TAG, "text: ${text.replace('\n', ' ').take(500)}")
+        text.replace('\n', ' ').chunked(900).forEachIndexed { i, part ->
+            Log.d(TAG, "text[$i]: $part")
+        }
         Log.d(TAG, "matched: ${result.found}")
 
         if (result.worthRemembering) {
