@@ -16,8 +16,12 @@ class CallStateWatcher(private val ctx: Context) {
 
     private val callback = object : TelephonyCallback(), TelephonyCallback.CallStateListener {
         override fun onCallStateChanged(state: Int) {
+            // Logged on every transition: when a real call produced no warning, the silence
+            // here was indistinguishable from the watcher never having registered at all.
+            Log.d(TAG, "call state $state (${stateName(state)})")
             when (state) {
                 TelephonyManager.CALL_STATE_OFFHOOK -> CallContext.take()?.let { p ->
+                    Log.d(TAG, "answered: number=${p.number} known=${p.known} unverified=${p.unverified}")
                     SignalBus.emit(
                         Signal.CallStarted(p.number, Channel.CELLULAR, p.known, unverified = p.unverified)
                     )
@@ -45,5 +49,12 @@ class CallStateWatcher(private val ctx: Context) {
 
     private companion object {
         const val TAG = "KaavaluCallState"
+
+        fun stateName(state: Int) = when (state) {
+            TelephonyManager.CALL_STATE_IDLE -> "idle"
+            TelephonyManager.CALL_STATE_RINGING -> "ringing"
+            TelephonyManager.CALL_STATE_OFFHOOK -> "answered"
+            else -> "unknown"
+        }
     }
 }
