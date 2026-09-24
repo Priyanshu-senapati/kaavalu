@@ -1,0 +1,16 @@
+<resources>
+
+    <style name="Theme.Kaavalu" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:statusBarColor">@color/kaavalu_paper</item>
+        <item name="android:navigationBarColor">@color/kaavalu_paper</item>
+        <item name="android:windowLightStatusBar">true</item>
+    </style>
+
+    <!-- The interrupt must read as an emergency, not as a page of the app. -->
+    <style name="Theme.Kaavalu.Interrupt" parent="android:Theme.Material.NoActionBar">
+        <item name="android:statusBarColor">@color/kaavalu_alarm</item>
+        <item name="android:navigationBarColor">@color/kaavalu_alarm</item>
+        <item name="android:windowLightStatusBar">false</item>
+    </style>
+
+</resources>

@@ -1,0 +1,16 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- A shield: the watchman's badge. -->
+    <path
+        android:fillColor="#FFFBF7F0"
+        android:pathData="M54,28 L74,35 L74,54 C74,66 65,75 54,80 C43,75 34,66 34,54 L34,35 Z" />
+    <path
+        android:fillColor="#FF8E1F1A"
+        android:pathData="M54,42 m-4,0 a4,4 0 1,0 8,0 a4,4 0 1,0 -8,0 Z" />
+    <path
+        android:fillColor="#FF8E1F1A"
+        android:pathData="M51,50 L57,50 L57,68 L51,68 Z" />
+</vector>

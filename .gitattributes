@@ -1,0 +1,6 @@
+# Keep line endings sane across Windows, macOS and Linux checkouts.
+* text=auto eol=lf
+*.bat text eol=crlf
+gradlew text eol=lf
+*.jar binary
+*.png binary

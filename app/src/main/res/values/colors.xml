@@ -1,0 +1,6 @@
+<resources>
+    <color name="kaavalu_ink">#FF141210</color>
+    <color name="kaavalu_paper">#FFFBF7F0</color>
+    <color name="kaavalu_alarm">#FF8E1F1A</color>
+    <color name="kaavalu_gold">#FFFFD58A</color>
+</resources>

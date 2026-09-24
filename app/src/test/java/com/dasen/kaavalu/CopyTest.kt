@@ -1,0 +1,52 @@
+package com.dasen.kaavalu
+
+import com.dasen.kaavalu.core.Contribution
+import org.junit.Assert.assertNotEquals
+import org.junit.Assert.assertTrue
+import org.junit.Test
+
+/**
+ * The warning has to read in one language. A breakdown line left in English while the rest
+ * of the screen is Kannada is the kind of thing a jury notices and a frightened user does
+ * not read at all.
+ */
+class CopyTest {
+
+    private val keys = listOf(
+        "unknown", "unverified", "video", "repeat",
+        "dur10", "dur20", "dur40", "payment", "remote", "notice",
+    )
+
+    @Test
+    fun everySignalHasAReasonAndSourceInEveryLanguage() {
+        for ((lang, _) in Copy.languages) {
+            for (key in keys) {
+                val reason = Copy.reasonFor(lang, key, 20)
+                val source = Copy.sourceFor(lang, key)
+                assertTrue("$lang/$key reason is blank", reason.isNotBlank())
+                assertNotEquals("$lang/$key fell through to the raw key", key, reason)
+                assertTrue("$lang/$key source is blank", source.isNotBlank())
+            }
+        }
+    }
+
+    @Test
+    fun breakdownLinesAreTranslatedNotLeftInEnglish() {
+        for (key in keys) {
+            val english = Copy.reasonFor("en", key, 20)
+            assertNotEquals("kn still reads as English for $key", english, Copy.reasonFor("kn", key, 20))
+            assertNotEquals("hi still reads as English for $key", english, Copy.reasonFor("hi", key, 20))
+        }
+    }
+
+    @Test
+    fun durationAndRepeatLinesCarryTheirNumber() {
+        val duration = Contribution("dur40", 40, 15, 0L)
+        assertTrue(Copy.reasonFor("en", duration.key, duration.arg).contains("40"))
+        assertTrue(Copy.reasonFor("kn", duration.key, duration.arg).contains("40"))
+
+        val repeat = Contribution("repeat", 3, 10, 0L)
+        assertTrue(Copy.reasonFor("en", repeat.key, repeat.arg).contains("3"))
+        assertTrue(Copy.reasonFor("hi", repeat.key, repeat.arg).contains("3"))
+    }
+}
