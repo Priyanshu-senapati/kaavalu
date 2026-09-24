@@ -13,7 +13,8 @@ val Ink = Color(0xFF141210)
 val Paper = Color(0xFFFBF7F0)
 val Alarm = Color(0xFF8E1F1A)
 val Gold = Color(0xFFFFD58A)
-val Guard = Color(0xFF1F3D2B)
+val Guard = Color(0xFF14432B)
+val Caution = Color(0xFF8A5A00)
 val Muted = Color(0xFF6B655C)
 
 /**

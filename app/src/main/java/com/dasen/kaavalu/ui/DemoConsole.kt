@@ -19,7 +19,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -47,13 +46,13 @@ import com.dasen.kaavalu.core.SignalBus
  * not forgive finding out afterwards.
  */
 @Composable
-fun DemoConsole(engine: RiskEngine, onBack: () -> Unit) {
+fun DemoConsole(engine: RiskEngine, modifier: Modifier = Modifier) {
     val lang = Prefs.language(LocalContext.current)
     val s by engine.state.collectAsStateWithLifecycle()
     var demoTime by remember { mutableStateOf(engine.config.timeScale > 1.0) }
 
     Column(
-        Modifier
+        modifier
             .fillMaxSize()
             .background(Paper)
             .verticalScroll(rememberScrollState())
@@ -127,7 +126,6 @@ fun DemoConsole(engine: RiskEngine, onBack: () -> Unit) {
             }
         }
 
-        TextButton(onClick = onBack, modifier = Modifier.fillMaxWidth()) { Text("Back") }
         Spacer(Modifier.height(24.dp))
     }
 }

@@ -176,7 +176,8 @@ private fun GuardianForm(onNext: (name: String, guardian: String, lang: String) 
     var number by remember { mutableStateOf("") }
     var lang by remember { mutableStateOf("en") }
 
-    Text("ಕಾವಲು", style = MaterialTheme.typography.displaySmall, color = Guard)
+    Text("Kaavalu", style = MaterialTheme.typography.displaySmall, color = Guard)
+    Text("ಕಾವಲು  ·  the watch", style = MaterialTheme.typography.bodySmall, color = Muted)
     Text(
         "Set this up once for the person you are protecting. It then runs silently.",
         style = MaterialTheme.typography.bodyLarge,

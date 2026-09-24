@@ -46,5 +46,19 @@ object Guardian {
         return Copy.guardianSms(lang, Prefs.userName(ctx), why, s.score)
     }
 
+    /**
+     * Proof that the alert path works, sent on demand. A guardian SMS that silently fails
+     * is worse than no guardian at all, and you only find out on the day it matters.
+     */
+    fun sendTest(ctx: Context) {
+        val to = Prefs.guardian(ctx) ?: return
+        if (ctx.checkSelfPermission(Manifest.permission.SEND_SMS) != PackageManager.PERMISSION_GRANTED) return
+        val body = Copy.guardianTestSms(Prefs.language(ctx), Prefs.userName(ctx))
+        runCatching {
+            val sms = ctx.getSystemService(SmsManager::class.java)
+            sms.sendMultipartTextMessage(to, null, sms.divideMessage(body), null, null)
+        }.onFailure { Log.e(TAG, "test SMS failed: ${it.message}") }
+    }
+
     private const val TAG = "KaavaluGuardian"
 }

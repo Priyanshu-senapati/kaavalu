@@ -183,6 +183,13 @@ object Copy {
             "Risk $score/100. Please call them now."
     }
 
+    fun guardianTestSms(lang: String, name: String): String = when (lang) {
+        "kn" -> "ಕಾವಲು ಪರೀಕ್ಷೆ: $name ಅವರ ಫೋನ್ ಸುರಕ್ಷಿತವಾಗಿದೆ. ನಿಜವಾದ ಎಚ್ಚರಿಕೆ ಹೀಗೆ ಬರುತ್ತದೆ."
+        "hi" -> "कावलु परीक्षण: $name का फ़ोन सुरक्षित है। असली चेतावनी ऐसी ही दिखेगी।"
+        else -> "KAAVALU TEST: this is what a real alert about $name will look like. " +
+            "No action needed."
+    }
+
     /** Spoken answer for "Ask Kaavalu" when the description matches the digital arrest script. */
     fun askScamAnswer(lang: String) = when (lang) {
         "kn" -> "ಇದು ಪ್ರಸಿದ್ಧ ವಂಚನೆ. ಯಾವ ಸಂಸ್ಥೆಯೂ ಕರೆಯಲ್ಲಿ ಬಂಧಿಸುವುದಿಲ್ಲ. ಹಣ ಕಳುಹಿಸಬೇಡಿ. ಕುಟುಂಬಕ್ಕೆ ಅಥವಾ 1930 ಗೆ ಕರೆ ಮಾಡಿ."
