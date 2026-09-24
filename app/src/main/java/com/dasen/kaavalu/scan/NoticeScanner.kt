@@ -1,5 +1,6 @@
 package com.dasen.kaavalu.scan
 
+import android.util.Log
 import com.dasen.kaavalu.core.Signal
 import com.dasen.kaavalu.core.SignalBus
 import com.google.mlkit.vision.common.InputImage
@@ -115,8 +116,27 @@ class NoticeScanner {
         val text = (latinText + "\n" + devanagariText).trim()
 
         val result = NoticeMarkers.evaluate(text)
+
+        // Diagnostics, restored after the merge dropped them. When a scan gives the wrong
+        // answer, this is the only way to tell a failed read from a short marker list, and
+        // the character count is what distinguishes a real photo from a camera thumbnail.
+        //   adb logcat -s KaavaluScan
+        Log.d(
+            TAG,
+            "read ${text.length} chars (latin ${latinText.length}, " +
+                "devanagari ${devanagariText.length}) -> ${result.score} ${result.verdict}",
+        )
+        text.lineSequence().joinToString(" ").chunked(900).forEachIndexed { i, part ->
+            Log.d(TAG, "text[$i]: $part")
+        }
+        Log.d(TAG, "matched: ${result.found}")
+
         if (result.flagged) SignalBus.emit(Signal.NoticeFlagged(result.score, result.found))
         return result
+    }
+
+    private companion object {
+        const val TAG = "KaavaluScan"
     }
 }
 
