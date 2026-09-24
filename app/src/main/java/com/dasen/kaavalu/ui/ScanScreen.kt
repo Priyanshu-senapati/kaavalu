@@ -58,11 +58,11 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
 import com.dasen.kaavalu.Prefs
+import com.dasen.kaavalu.ScanCopy
 import com.dasen.kaavalu.R
 import com.dasen.kaavalu.scan.Cue
 import com.dasen.kaavalu.scan.NoticeMarkers
 import com.dasen.kaavalu.scan.NoticeScanner
-import com.dasen.kaavalu.scan.ScamKind
 import com.dasen.kaavalu.scan.ScanResult
 import com.dasen.kaavalu.scan.Verdict
 import com.google.mlkit.vision.common.InputImage
@@ -86,6 +86,7 @@ import java.io.File
  */
 @Composable
 fun ScanScreen(onBack: () -> Unit) {
+    val lang = Prefs.language(LocalContext.current)
     val ctx = LocalContext.current
     val scope = rememberCoroutineScope()
     val scanner = remember { NoticeScanner() }
@@ -153,8 +154,8 @@ fun ScanScreen(onBack: () -> Unit) {
 
     ScreenColumn(spacing = Space.lg) {
         ScreenTitle(
-            title = "Is this notice real?",
-            lead = "Checked on this phone. Nothing is uploaded.",
+            title = ScanCopy.screenTitle(lang),
+            lead = ScanCopy.screenLead(lang),
         )
 
         Inspector(phase, preview)
@@ -266,6 +267,7 @@ private suspend fun decodePreview(ctx: android.content.Context, uri: Uri): Image
  */
 @Composable
 private fun Inspector(phase: ScanPhase, preview: ImageBitmap?) {
+    val lang = Prefs.language(LocalContext.current)
     val tall = phase is ScanPhase.Ready || phase is ScanPhase.Failed || phase is ScanPhase.Reading
     val height = when {
         phase is ScanPhase.Done && preview == null -> 0.dp
@@ -302,7 +304,7 @@ private fun Inspector(phase: ScanPhase, preview: ImageBitmap?) {
                     Icon(painterResource(R.drawable.ic_nav_scan), null, tint = Muted, modifier = Modifier.size(40.dp))
                     Spacer(Modifier.height(Space.sm))
                     Text(
-                        "Fill the frame with the page. Keep it sharp.",
+                        ScanCopy.framingHint(lang),
                         style = MaterialTheme.typography.bodyMedium,
                         color = Muted,
                     )
@@ -345,15 +347,16 @@ private fun Inspector(phase: ScanPhase, preview: ImageBitmap?) {
 
 @Composable
 private fun CaptureActions(onPhotograph: () -> Unit, onPick: () -> Unit, retake: Boolean = false) {
+    val lang = Prefs.language(LocalContext.current)
     Column(verticalArrangement = Arrangement.spacedBy(Space.sm)) {
         BigAction(
-            if (retake) "Take the photo again" else "Photograph the notice",
+            ScanCopy.takePhoto(lang, retake),
             icon = R.drawable.ic_camera,
             critical = true,
             onClick = onPhotograph,
         )
         BigAction(
-            "Choose a screenshot",
+            ScanCopy.pickScreenshot(lang),
             style = ActionStyle.Secondary,
             icon = R.drawable.ic_image,
             critical = true,
@@ -362,22 +365,30 @@ private fun CaptureActions(onPhotograph: () -> Unit, onPick: () -> Unit, retake:
     }
 }
 
-internal fun cueName(c: Cue) = when (c) {
-    Cue.AUTHORITY -> "Authority"
-    Cue.THREAT -> "Threat"
-    Cue.MONEY -> "Money"
-    Cue.SECRECY -> "Secrecy"
-    Cue.URGENCY -> "Urgency"
-    Cue.ISOLATION -> "Isolation"
-    Cue.IDENTITY -> "Identity"
-    Cue.STORY -> "Cover story"
-}
+internal fun cueName(c: Cue, lang: String = "en") = ScanCopy.cue(lang, c.name)
 
-/** A scan's evidence as tally lines, with the combination bonus as its own honest line. */
-internal fun scanLines(r: ScanResult, where: String): List<EvidenceLine> =
-    r.evidence.map { EvidenceLine(it.points, it.why, "$where · ${cueName(it.cue)}") } +
+/**
+ * A scan's evidence as tally lines, with the combination bonus as its own honest line.
+ *
+ * Read through ScanCopy by marker id, not straight off the marker's English text: the
+ * verdict used to answer in English on a phone whose every other screen was Kannada.
+ */
+internal fun scanLines(r: ScanResult, where: String, lang: String = "en"): List<EvidenceLine> =
+    r.evidence.map {
+        EvidenceLine(
+            it.points,
+            ScanCopy.markerReason(lang, it.id, it.why),
+            "$where · ${cueName(it.cue, lang)}",
+        )
+    } +
         if (r.comboBonus > 0) {
-            listOf(EvidenceLine(r.comboBonus, "Several pressures at once. Scams stack them; honest letters don’t.", "$where · Combination"))
+            listOf(
+                EvidenceLine(
+                    r.comboBonus,
+                    ScanCopy.combination(lang),
+                    "$where · " + ScanCopy.cue(lang, "COMBINATION"),
+                ),
+            )
         } else {
             emptyList()
         }
@@ -395,44 +406,37 @@ internal fun verdictSchedule(lines: Int): List<Long> = buildList {
  */
 @Composable
 private fun VerdictSheet(r: ScanResult) {
-    val lines = remember(r) { scanLines(r, "Notice scan") }
+    val lang = Prefs.language(LocalContext.current)
+    val lines = remember(r, lang) { scanLines(r, ScanCopy.noticeScan(lang), lang) }
     val stage = rememberStage(r, verdictSchedule(tallyRows(lines.size)))
     val revealed = (stage - 2).coerceAtLeast(0)
     val locked = revealed >= tallyRows(lines.size) && stage >= 2
 
-    val (sign, headline, tone) = when (r.verdict) {
-        Verdict.SCAM -> Triple(
-            "Scam",
-            if (r.kind == ScamKind.GENERIC) "This is a scam notice" else "This is ${r.kind.title}",
-            Tone.Danger,
-        )
-        Verdict.SUSPICIOUS -> Triple(
-            "Suspicious",
-            if (r.kind == ScamKind.GENERIC) "This looks like a scam" else "This looks like ${r.kind.title}",
-            Tone.Checking,
-        )
-        Verdict.UNCLEAR -> Triple("No scam signs", "No known scam phrases found", Tone.Neutral)
-        Verdict.UNREADABLE -> Triple("Unreadable", "Kaavalu couldn’t read that", Tone.Neutral)
+    val tone = when (r.verdict) {
+        Verdict.SCAM -> Tone.Danger
+        Verdict.SUSPICIOUS -> Tone.Checking
+        else -> Tone.Neutral
     }
+    val sign = ScanCopy.verdictSign(lang, r.verdict.name)
+    // Names the scam when the markers say which one: "This is the part-time job scam".
+    val headline = ScanCopy.kindHeadline(lang, r.verdict.name, r.kind.name, r.kind.title)
 
     Sheet(padding = Space.xl, spacing = Space.md) {
-        VerdictHead(sign, headline, tone, locked = locked)
+        VerdictHead(sign, headline, tone, locked = locked, lang = lang)
 
         when (r.verdict) {
             Verdict.SCAM, Verdict.SUSPICIOUS -> StageIn(visible = stage >= 1, from = 24) {
-                Instruction("Do not reply, do not pay, do not call the number on it.", tone)
+                Instruction(ScanCopy.instruction(lang), tone)
             }
 
             Verdict.UNCLEAR -> Text(
-                "That doesn’t prove it’s real. A real agency sends a letter by post, not on " +
-                    "WhatsApp. Ask your family before you do anything it asks.",
+                ScanCopy.unclearBody(lang),
                 style = MaterialTheme.typography.bodyLarge,
                 color = Ink2,
             )
 
             Verdict.UNREADABLE -> Text(
-                "Almost no text came back. Retake it closer, in good light, without a shadow " +
-                    "across the page — or pick the original screenshot, which is always sharper.",
+                ScanCopy.unreadableBody(lang),
                 style = MaterialTheme.typography.bodyLarge,
                 color = Ink2,
             )
@@ -441,7 +445,7 @@ private fun VerdictSheet(r: ScanResult) {
         if (lines.isNotEmpty()) {
             Spacer(Modifier.height(Space.xxs))
             Text(
-                "What Kaavalu found",
+                ScanCopy.evidenceHeading(lang),
                 style = MaterialTheme.typography.titleMedium,
                 color = Ink,
                 modifier = Modifier.semantics { heading() },
@@ -451,6 +455,9 @@ private fun VerdictSheet(r: ScanResult) {
                 total = r.score,
                 tone = tone,
                 revealed = revealed,
+                lang = lang,
+                totalCaption = com.dasen.kaavalu.Copy.evidenceTotal(lang),
+                capLabel = com.dasen.kaavalu.Copy.capped(lang),
                 scale = ScaleSpec(
                     marks = listOf(NoticeMarkers.NOTICE_SUSPICIOUS_AT, NoticeMarkers.NOTICE_SCAM_AT),
                     describe = "Score ${r.score} of 100. Suspicious from ${NoticeMarkers.NOTICE_SUSPICIOUS_AT}, " +
@@ -483,21 +490,18 @@ internal fun Instruction(text: String, tone: Tone) {
  */
 @Composable
 private fun WhatItLooksFor() {
+    val lang = Prefs.language(LocalContext.current)
     Column(verticalArrangement = Arrangement.spacedBy(Space.sm)) {
-        SectionTitle("What Kaavalu looks for")
+        SectionTitle(ScanCopy.looksForHeading(lang))
         Text(
-            "Scam notices use several of these together. One on its own is usually harmless.",
+            ScanCopy.looksForLead(lang),
             style = MaterialTheme.typography.bodyMedium,
             color = Muted,
         )
         Sheet(padding = Space.lg, spacing = 0.dp) {
-            listOf(
-                "Authority" to "Names an agency, a court or an officer",
-                "Threat" to "Arrest, jail, a blocked SIM, a frozen account",
-                "Money" to "A fee, a transfer, a QR code, an OTP",
-                "Secrecy" to "Tells you not to involve your family",
-                "Urgency" to "Puts a clock on it",
-            ).forEachIndexed { i, (cue, what) ->
+            listOf("AUTHORITY", "THREAT", "MONEY", "SECRECY", "URGENCY").map {
+                ScanCopy.cue(lang, it) to ScanCopy.looksLike(lang, it)
+            }.forEachIndexed { i, (cue, what) ->
                 if (i > 0) HRule()
                 Row(
                     Modifier.fillMaxWidth().padding(vertical = Space.sm).semantics(mergeDescendants = true) {},

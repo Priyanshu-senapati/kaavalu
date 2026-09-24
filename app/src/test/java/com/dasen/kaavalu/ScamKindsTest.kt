@@ -1,6 +1,7 @@
 package com.dasen.kaavalu
 
 import com.dasen.kaavalu.scan.NoticeMarkers
+import com.dasen.kaavalu.ScanCopy
 import com.dasen.kaavalu.scan.ScamKind
 import com.dasen.kaavalu.scan.Verdict
 import org.junit.Assert.assertEquals
@@ -115,6 +116,26 @@ class ScamKindsTest {
             "tax before I can get my money",
         ScamKind.INVESTMENT,
     )
+
+    /** A named scam is named in every language, and never left as the English title. */
+    @Test
+    fun everyScamKindIsNamedInEveryLanguage() {
+        for (kind in ScamKind.entries.filter { it != ScamKind.GENERIC }) {
+            for (verdict in listOf("SCAM", "SUSPICIOUS")) {
+                val en = ScanCopy.kindHeadline("en", verdict, kind.name, kind.title)
+                assertTrue("en/$kind/$verdict does not name it: $en", en.contains(kind.title))
+                for (lang in listOf("hi", "kn")) {
+                    val line = ScanCopy.kindHeadline(lang, verdict, kind.name, kind.title)
+                    assertFalse("$lang/$kind/$verdict is still English: $line", line.contains(kind.title))
+                }
+            }
+        }
+        // An unnamed scam falls back to the plain translated verdict.
+        assertEquals(
+            ScanCopy.verdictHeadline("kn", "SCAM"),
+            ScanCopy.kindHeadline("kn", "SCAM", "GENERIC", ScamKind.GENERIC.title),
+        )
+    }
 
     // ── Honest look-alikes stay clear ──────────────────────────────────────────────────
 

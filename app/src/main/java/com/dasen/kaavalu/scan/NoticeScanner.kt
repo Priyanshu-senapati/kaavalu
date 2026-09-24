@@ -102,7 +102,12 @@ enum class ScamKind(val title: String) {
  * One matched marker, with the points it carried. [found] keeps the plain sentences for
  * everything that already reads them; this is what lets a verdict show its arithmetic.
  */
-data class Evidence(val why: String, val points: Int, val cue: Cue)
+/**
+ * [id] is the marker id, carried so the screens can render this line in the family's
+ * language. Without it the scan verdict answered in English on a Kannada phone, the
+ * same defect the interrupt breakdown had before Contribution started carrying a key.
+ */
+data class Evidence(val id: String, val why: String, val points: Int, val cue: Cue)
 
 data class ScanResult(
     val score: Int,
@@ -223,7 +228,7 @@ object NoticeMarkers {
             text = raw,
             verdict = verdict,
             cues = cues,
-            evidence = ranked.map { Evidence(it.why, it.weight, it.cue) },
+            evidence = ranked.map { Evidence(it.id, it.why, it.weight, it.cue) },
             comboBonus = bonus,
             kind = kindOf(hits.map { it.id }.toSet()),
         )
@@ -549,7 +554,11 @@ object NoticeMarkers {
      * are too loose to put on a printed notice without flagging honest letters. They share
      * ids with the written markers where they mean the same thing.
      */
-    private val SPOKEN = listOf(
+    /**
+     * Internal, not private: ScanCopyTest walks every marker the scanner can produce to
+     * prove none of them ships without a Hindi and Kannada line.
+     */
+    internal val SPOKEN = listOf(
         Marker(
             "identity",
             r("""aadhaa?r|आधार|ಆಧಾರ್|adhar|aadar"""),

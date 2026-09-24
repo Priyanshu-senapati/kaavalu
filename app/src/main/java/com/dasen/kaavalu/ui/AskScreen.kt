@@ -81,6 +81,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.dasen.kaavalu.Copy
 import com.dasen.kaavalu.Prefs
+import com.dasen.kaavalu.ScanCopy
 import com.dasen.kaavalu.R
 import com.dasen.kaavalu.respond.Speaker
 import com.dasen.kaavalu.scan.NoticeMarkers
@@ -588,25 +589,22 @@ private fun AnswerSheet(
         else -> Tone.Neutral
     }
     val reply = Copy.askAnswer(lang, scam, r.kind.name)
-    val lines = remember(r) { scanLines(r, "What you said") }
+    val lines = remember(r, lang) { scanLines(r, ScanCopy.whatYouSaid(lang), lang) }
     val stage = rememberStage(r, verdictSchedule(tallyRows(lines.size)))
     val revealed = (stage - 2).coerceAtLeast(0)
 
     Column(verticalArrangement = Arrangement.spacedBy(Space.md)) {
         Sheet(padding = Space.xl, spacing = Space.md) {
             VerdictHead(
-                sign = when (r.verdict) {
-                    Verdict.SCAM -> "Scam"
-                    Verdict.SUSPICIOUS -> "Suspicious"
-                    else -> "No scam signs"
-                },
-                headline = when (r.verdict) {
-                    Verdict.SCAM -> "This is ${r.kind.title}"
-                    Verdict.SUSPICIOUS -> "This sounds like ${r.kind.title}"
-                    else -> "No scam signs heard"
+                sign = ScanCopy.verdictSign(lang, if (scam) r.verdict.name else "UNCLEAR"),
+                headline = if (scam) {
+                    ScanCopy.kindHeadline(lang, r.verdict.name, r.kind.name, r.kind.title, heard = true)
+                } else {
+                    ScanCopy.noSignsHeard(lang)
                 },
                 tone = tone,
                 locked = revealed >= tallyRows(lines.size) && stage >= 2,
+                lang = lang,
             )
 
             StageIn(visible = stage >= 1, from = 24) {
@@ -628,6 +626,9 @@ private fun AnswerSheet(
                     total = r.score,
                     tone = tone,
                     revealed = revealed,
+                    lang = lang,
+                    totalCaption = Copy.evidenceTotal(lang),
+                    capLabel = Copy.capped(lang),
                     scale = ScaleSpec(
                         marks = listOf(NoticeMarkers.SPOKEN_SUSPICIOUS_AT, NoticeMarkers.SPOKEN_SCAM_AT),
                         describe = "Score ${r.score} of 100. Suspicious from ${NoticeMarkers.SPOKEN_SUSPICIOUS_AT}, " +
