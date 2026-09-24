@@ -34,6 +34,7 @@ class Responder(
                 last = s.tier
                 when (s.tier) {
                     Tier.CALM -> {
+                        Guardian.reset()
                         speaker.stop()
                         Notifications.clearWarning(ctx)
                     }

@@ -78,7 +78,7 @@ fun Home(engine: RiskEngine, navigate: (Screen) -> Unit) {
             LiveCall(
                 score = state.score,
                 tier = state.tier,
-                sessionActive = state.sessionActive,
+                sessionActive = state.onCall,
                 contributions = state.contributions,
                 escalations = state.escalations,
                 config = engine.config,
@@ -110,6 +110,19 @@ fun Home(engine: RiskEngine, navigate: (Screen) -> Unit) {
                         Text("1930", style = KType.dial, color = Alarm)
                     },
                 ) { dialNumber(ctx, "1930") }
+                HRule(Modifier.padding(start = 64.dp))
+                ActionRow(
+                    icon = R.drawable.ic_nav_scan,
+                    verb = "Recent calls",
+                    detail = recentDetail(ctx),
+                ) { navigate(Screen.HISTORY) }
+                HRule(Modifier.padding(start = 64.dp))
+                ActionRow(
+                    icon = R.drawable.ic_warning,
+                    verb = "I already sent money",
+                    detail = "What to do in the next hour, in order",
+                    tone = Tone.Danger,
+                ) { navigate(Screen.RECOVER) }
             }
         }
 
@@ -359,6 +372,19 @@ private fun RulesWell() {
                 )
             }
         }
+    }
+}
+
+/** "3 calls from unknown numbers this week", or what the history is for when it is empty. */
+private fun recentDetail(ctx: android.content.Context): String {
+    val calls = com.dasen.kaavalu.core.CallHistory.decode(Prefs.history(ctx))
+    val week = System.currentTimeMillis() - 7 * 24 * 60 * 60_000L
+    val recent = calls.count { it.startedAt >= week }
+    return when {
+        calls.isEmpty() -> "Every call from an unknown number, with its report"
+        recent == 1 -> "1 call from an unknown number this week"
+        recent > 1 -> "$recent calls from unknown numbers this week"
+        else -> "${calls.size} earlier ${if (calls.size == 1) "call" else "calls"} from unknown numbers"
     }
 }
 

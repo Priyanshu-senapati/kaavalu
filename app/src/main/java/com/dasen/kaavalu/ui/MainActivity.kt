@@ -18,6 +18,10 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.isImeVisible
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -63,13 +67,20 @@ enum class Screen(val label: String, val icon: Int, val inBar: Boolean = true) {
     ASK("Ask", R.drawable.ic_nav_ask),
     SETUP("Setup", R.drawable.ic_nav_setup),
     DEMO("Demo", R.drawable.ic_nav_demo, inBar = false),
+    RECOVER("Help", R.drawable.ic_phone, inBar = false),
+    HISTORY("Recent calls", R.drawable.ic_nav_home, inBar = false),
 }
 
 private val Tabs = Screen.entries.filter { it.inBar }
 
-/** Which tab is lit for [screen]. The demo console lives under Setup. */
-private fun tabOf(screen: Screen) = if (screen == Screen.DEMO) Screen.SETUP else screen
+/** Which tab is lit for [screen]. The demo console lives under Setup, recovery under Home. */
+private fun tabOf(screen: Screen) = when (screen) {
+    Screen.DEMO -> Screen.SETUP
+    Screen.RECOVER, Screen.HISTORY -> Screen.HOME
+    else -> screen
+}
 
+@OptIn(ExperimentalLayoutApi::class)
 class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -89,7 +100,7 @@ class MainActivity : ComponentActivity() {
                 if (!onboarded) {
                     // First run is a ladder, not a tab bar: the nav would only offer ways to
                     // leave before protection is actually on.
-                    Box(Modifier.fillMaxSize().background(Paper).statusBarsPadding().navigationBarsPadding()) {
+                    Box(Modifier.fillMaxSize().background(Paper).statusBarsPadding().navigationBarsPadding().imePadding()) {
                         Onboarding(firstRun = true) {
                             Prefs.setOnboardingDone(this@MainActivity, true)
                             KaavaluApp.startGuarding(this@MainActivity)
@@ -104,7 +115,11 @@ class MainActivity : ComponentActivity() {
                     screen = if (screen == Screen.DEMO) Screen.SETUP else Screen.HOME
                 }
 
-                Column(Modifier.fillMaxSize().background(Paper)) {
+                // The app draws edge to edge, so the keyboard does not resize it: without this
+                // the field being typed into sat behind the keyboard on a real phone. While
+                // typing, the tab bar steps aside so the page ends at the keyboard's edge.
+                val typing = WindowInsets.isImeVisible
+                Column(Modifier.fillMaxSize().background(Paper).imePadding()) {
                     Box(
                         Modifier
                             .weight(1f)
@@ -144,10 +159,15 @@ class MainActivity : ComponentActivity() {
                                     onOpenDemo = { screen = Screen.DEMO },
                                 ) { screen = Screen.HOME }
                                 Screen.DEMO -> DemoConsole(engine) { screen = Screen.SETUP }
+                                Screen.RECOVER -> RecoveryScreen(
+                                    onBack = { screen = Screen.HOME },
+                                    onHistory = { screen = Screen.HISTORY },
+                                )
+                                Screen.HISTORY -> HistoryScreen { screen = Screen.HOME }
                             }
                         }
                     }
-                    KaavaluNavBar(tabOf(screen)) { screen = it }
+                    if (!typing) KaavaluNavBar(tabOf(screen)) { screen = it }
                 }
             }
         }

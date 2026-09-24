@@ -82,6 +82,23 @@ enum class Verdict {
 }
 
 /**
+ * Which scam a result looks like, so an answer can name it. "This is the digital arrest
+ * scam" said to someone describing a part-time job offer is wrong in a way that makes the
+ * rest of the answer easy to dismiss.
+ */
+enum class ScamKind(val title: String) {
+    DIGITAL_ARREST("the digital arrest scam"),
+    SEXTORTION("the video-call blackmail scam"),
+    JOB("the part-time job scam"),
+    INVESTMENT("the investment scam"),
+    FAMILY_EMERGENCY("the relative-in-trouble scam"),
+    CUSTOMER_CARE("the fake customer-care scam"),
+    BANK_KYC("the KYC scam"),
+    COURIER("the parcel scam"),
+    GENERIC("a known scam"),
+}
+
+/**
  * One matched marker, with the points it carried. [found] keeps the plain sentences for
  * everything that already reads them; this is what lets a verdict show its arithmetic.
  */
@@ -102,6 +119,8 @@ data class ScanResult(
     val evidence: List<Evidence> = emptyList(),
     /** Points added because several core pressures appeared together. */
     val comboBonus: Int = 0,
+    /** Which scam the matched markers describe. Meaningful when [flagged]. */
+    val kind: ScamKind = ScamKind.GENERIC,
 ) {
     /** Whether this is worth putting on the risk engine's bus. */
     val flagged: Boolean get() = verdict == Verdict.SCAM || verdict == Verdict.SUSPICIOUS
@@ -211,7 +230,28 @@ object NoticeMarkers {
             cues = cues,
             evidence = ranked.map { Evidence(it.id, it.why, it.weight, it.cue) },
             comboBonus = bonus,
+            kind = kindOf(hits.map { it.id }.toSet()),
         )
+    }
+
+    /**
+     * The most specific story the markers tell. Order matters: blackmail, job and
+     * investment scams can all mention the police or a parcel in passing, but those words
+     * never make them a digital arrest, so the distinctive stories are checked first.
+     */
+    internal fun kindOf(ids: Set<String>): ScamKind = when {
+        "sextortion" in ids -> ScamKind.SEXTORTION
+        "job-task" in ids -> ScamKind.JOB
+        "investment" in ids -> ScamKind.INVESTMENT
+        "family-emergency" in ids -> ScamKind.FAMILY_EMERGENCY
+        "digital-arrest" in ids -> ScamKind.DIGITAL_ARREST
+        ("arrest" in ids || "warrant" in ids) &&
+            ids.any { it in setOf("agency", "officer", "court") } -> ScamKind.DIGITAL_ARREST
+        "customer-care" in ids -> ScamKind.CUSTOMER_CARE
+        "kyc" in ids -> ScamKind.BANK_KYC
+        "parcel" in ids && ("agency" in ids || "arrest" in ids) -> ScamKind.DIGITAL_ARREST
+        "parcel" in ids -> ScamKind.COURIER
+        else -> ScamKind.GENERIC
     }
 
     /**
@@ -442,6 +482,70 @@ object NoticeMarkers {
             10, Cue.STORY,
             "Pushes you onto WhatsApp, Telegram or a link. Official notices never do.",
         ),
+        // Beyond digital arrest. These are the scripts the National Cyber Crime portal
+        // sees most after it: task-based job offers, fake trading groups, video-call
+        // blackmail, fake customer care, and a relative who is suddenly in trouble. Each
+        // names its story; the pressure that makes it a scam still comes from the core
+        // cues (money, threat, secrecy, urgency), so an honest job offer or a fund
+        // statement that tells the same story without the pressure stays clear.
+        Marker(
+            "job-task",
+            r(
+                """part[- ]?time (job|work)|work from home|earn (rs\.?|₹|inr)? ?\d[\d,]* ?(per|a|/) ?(day|daily)""" +
+                    """|daily (income|earning)|(like|rate|review|subscribe) (youtube |the )?(videos?|hotels?|products?|channels?)""" +
+                    """|prepaid task|task (commission|reward|bonus)|telegram task|वर्क फ्रॉम होम|पार्ट टाइम"""
+            ),
+            16, Cue.STORY,
+            "A part-time job for easy money. Real jobs never ask you to pay to start.",
+        ),
+        Marker(
+            "unlock-fee",
+            r(
+                """recharge (your )?(task|account|wallet) to|deposit .{0,12}to (unlock|continue|withdraw|upgrade)""" +
+                    """|withdraw(al)? (fee|tax|charge)|pay .{0,12}to (release|withdraw|unlock)|unfreeze (fee|charge)"""
+            ),
+            22, Cue.MONEY,
+            "Asks you to pay before you can take your own money out. That money never comes back.",
+        ),
+        Marker(
+            "investment",
+            r(
+                """guaranteed (returns?|profits?)|assured returns?|double your money|\d+ ?% (daily|weekly|monthly) (returns?|profits?)""" +
+                    """|stock (market )?tips|trading (group|app|platform|tips)|ipo allot|crypto(currency)? (investment|trading)""" +
+                    """|vip (group|plan|member)|institutional account|गारंटीड रिटर्न|पैसा डबल"""
+            ),
+            18, Cue.MONEY,
+            "Promises guaranteed or very high returns. Real investments never guarantee them.",
+        ),
+        Marker(
+            "sextortion",
+            r(
+                """(nude|obscene|objectionable|intimate|private|morphed|explicit) (video|photos?|pics?|images?|clip)""" +
+                    """|video (call )?(is |has been |was )?recorded|screen ?recorded|(make|go|goes) (it )?viral""" +
+                    """|(upload|send|share|leak) (it |the video |your video )?(to|with|on) (all )?(your )?(contacts|family|friends|youtube|facebook|instagram|social media)""" +
+                    """|अश्लील|वीडियो वायरल"""
+            ),
+            30, Cue.THREAT,
+            "Threatens to share a private video or photo. Paying never makes it stop; report it.",
+        ),
+        Marker(
+            "customer-care",
+            r(
+                """customer (care|support) (executive|number|team)|refund (is |has been )?(pending|initiated|approved|processed)""" +
+                    """|cash ?back (of|worth)|reward points? (are |will )?(expir|redeem)|credit card points""" +
+                    """|toll ?free (number|helpline)"""
+            ),
+            12, Cue.STORY,
+            "The refund or customer-care story. Real companies never call to give money back.",
+        ),
+        Marker(
+            "family-emergency",
+            r(
+                """your (son|daughter|husband|wife|father|mother|grandson|granddaughter|brother) (is|has been|was) (arrested|detained|in custody|in (an )?accident|in hospital|in trouble)"""
+            ),
+            18, Cue.THREAT,
+            "Says someone in your family is in trouble. Call them yourself before anything else.",
+        ),
     )
 
     /**
@@ -539,6 +643,69 @@ object NoticeMarkers {
             r("""block my (sim|number)|number will be blocked|sim will be (blocked|closed)"""),
             14, Cue.THREAT,
             "They threatened to block your SIM or number.",
+        ),
+        Marker(
+            "job-task",
+            r(
+                """part[- ]?time (job|work)|work from home|earn (money )?(from|at) home|like (youtube )?videos""" +
+                    """|rate (hotels|products)|(online|telegram) task|task (job|work)|पार्ट टाइम|घर बैठे"""
+            ),
+            16, Cue.STORY,
+            "They offered easy money for simple tasks. Real jobs never ask you to pay to start.",
+        ),
+        Marker(
+            "unlock-fee",
+            r(
+                """pay (to|before) (withdraw|unlock|get (my|the) money)|withdraw(al)? (fee|tax)""" +
+                    """|deposit (more )?to (withdraw|unlock|continue)|my money is (stuck|frozen)"""
+            ),
+            22, Cue.MONEY,
+            "They want payment before you can take your own money out. It never comes back.",
+        ),
+        Marker(
+            "investment",
+            r(
+                """guaranteed (return|profit)|double (my|the|your) money|stock (market )?tips|trading (group|app)""" +
+                    """|crypto|high returns?|ipo|पैसा डबल"""
+            ),
+            18, Cue.MONEY,
+            "They promised guaranteed or very high returns. Real investments never do.",
+        ),
+        Marker(
+            "sextortion",
+            r(
+                """nude|naked|obscene|dirty video|video of me|recorded (me|my|the video)|screen ?record""" +
+                    """|make it viral|send (it|the video) to (my )?(family|contacts|friends)|अश्लील|नंगा"""
+            ),
+            30, Cue.THREAT,
+            "They are threatening to share a private video. Paying never makes it stop.",
+        ),
+        Marker(
+            "customer-care",
+            r("""customer care|customer support|refund|cash ?back|reward points"""),
+            12, Cue.STORY,
+            "They claimed to be customer care offering a refund. Real companies never call for this.",
+        ),
+        Marker(
+            "family-emergency",
+            r(
+                """(son|daughter|grandson|granddaughter|nephew|husband|brother|beta|beti)\b.{0,30}""" +
+                    """(arrested|in custody|accident|hospital|police station|in trouble)""" +
+                    """|sounded (just )?like my|बेटा .{0,20}(गिरफ़?्तार|एक्सीडेंट|अस्पताल)"""
+            ),
+            18, Cue.THREAT,
+            "They said someone in your family is in trouble. Call that person yourself first.",
+        ),
+        Marker(
+            "remote-access",
+            r(
+                // Being *told* to install something, not installing: "my daughter helped
+                // me install an app for video calls" is the most ordinary sentence there is.
+                """(told|asked|made|wanted) me to (install|download)|\bapk\b|share (my )?screen""" +
+                    """|anydesk|team ?viewer|rust ?desk|ऐप डाउनलोड करने को"""
+            ),
+            20, Cue.MONEY,
+            "They asked you to install an app or share your screen. That hands over your phone.",
         ),
     )
 }

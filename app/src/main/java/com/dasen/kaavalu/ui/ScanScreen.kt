@@ -418,10 +418,11 @@ private fun VerdictSheet(r: ScanResult) {
         else -> Tone.Neutral
     }
     val sign = ScanCopy.verdictSign(lang, r.verdict.name)
-    val headline = ScanCopy.verdictHeadline(lang, r.verdict.name)
+    // Names the scam when the markers say which one: "This is the part-time job scam".
+    val headline = ScanCopy.kindHeadline(lang, r.verdict.name, r.kind.name, r.kind.title)
 
     Sheet(padding = Space.xl, spacing = Space.md) {
-        VerdictHead(sign, headline, tone, locked = locked)
+        VerdictHead(sign, headline, tone, locked = locked, lang = lang)
 
         when (r.verdict) {
             Verdict.SCAM, Verdict.SUSPICIOUS -> StageIn(visible = stage >= 1, from = 24) {
@@ -454,6 +455,9 @@ private fun VerdictSheet(r: ScanResult) {
                 total = r.score,
                 tone = tone,
                 revealed = revealed,
+                lang = lang,
+                totalCaption = com.dasen.kaavalu.Copy.evidenceTotal(lang),
+                capLabel = com.dasen.kaavalu.Copy.capped(lang),
                 scale = ScaleSpec(
                     marks = listOf(NoticeMarkers.NOTICE_SUSPICIOUS_AT, NoticeMarkers.NOTICE_SCAM_AT),
                     describe = "Score ${r.score} of 100. Suspicious from ${NoticeMarkers.NOTICE_SUSPICIOUS_AT}, " +

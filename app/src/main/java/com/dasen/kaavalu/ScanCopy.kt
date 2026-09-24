@@ -244,6 +244,13 @@ object ScanCopy {
         "otp" to "ओटीपी, पिन या सीवीवी मांगता है। कोई भी सही आदमी यह नहीं मांगता।",
         "remote-access" to "आपके फ़ोन का रिमोट कंट्रोल चाहता है। इससे आपके बैंक ऐप उनके हाथ चले जाते हैं।",
         "sim-block" to "सिम या नंबर बंद करने की धमकी देता है। ट्राई ऐसा कभी नहीं भेजता।",
+        // Beyond digital arrest.
+        "job-task" to "आसान कमाई वाली पार्ट-टाइम नौकरी। असली नौकरी शुरू करने के लिए पैसे नहीं मांगती।",
+        "unlock-fee" to "अपना ही पैसा निकालने से पहले भुगतान मांगता है। वह पैसा कभी वापस नहीं आता।",
+        "investment" to "पक्के या बहुत ऊँचे मुनाफ़े का वादा। असली निवेश कभी गारंटी नहीं देता।",
+        "sextortion" to "निजी वीडियो या फ़ोटो फैलाने की धमकी। पैसे देने से यह नहीं रुकता; शिकायत कीजिए।",
+        "customer-care" to "रिफ़ंड या कस्टमर केयर की कहानी। असली कंपनियाँ पैसे लौटाने के लिए कॉल नहीं करतीं।",
+        "family-emergency" to "कहता है कि परिवार का कोई मुसीबत में है। सबसे पहले उन्हें खुद कॉल कीजिए।",
         "parcel" to "पार्सल या कूरियर का ज़िक्र करता है, इसी से यह ठगी शुरू होती है।",
         "side-channel" to "व्हाट्सऐप, टेलीग्राम या किसी लिंक पर ले जाता है। सरकारी नोटिस ऐसा नहीं करते।",
         "bank" to "आपके बैंक खाते, कार्ड या ओटीपी के बारे में पूछता है। कोई सही आदमी ऐसा नहीं पूछता।",
@@ -269,11 +276,88 @@ object ScanCopy {
         "otp" to "ಓಟಿಪಿ, ಪಿನ್ ಅಥವಾ ಸಿವಿವಿ ಕೇಳುತ್ತದೆ. ಸರಿಯಾದ ಯಾರೂ ಇವುಗಳನ್ನು ಕೇಳುವುದಿಲ್ಲ.",
         "remote-access" to "ನಿಮ್ಮ ಫೋನಿನ ನಿಯಂತ್ರಣ ಬೇಕು ಎನ್ನುತ್ತದೆ. ಅದರಿಂದ ನಿಮ್ಮ ಬ್ಯಾಂಕ್ ಆ್ಯಪ್‌ಗಳು ಅವರ ಕೈಗೆ ಹೋಗುತ್ತವೆ.",
         "sim-block" to "ಸಿಮ್ ಅಥವಾ ಸಂಖ್ಯೆ ಬಂದ್ ಮಾಡುವ ಬೆದರಿಕೆ ಹಾಕುತ್ತದೆ. ಟ್ರಾಯ್ ಹೀಗೆ ಎಂದಿಗೂ ಕಳುಹಿಸುವುದಿಲ್ಲ.",
+        // Beyond digital arrest.
+        "job-task" to "ಸುಲಭ ಹಣದ ಪಾರ್ಟ್-ಟೈಮ್ ಕೆಲಸ. ನಿಜವಾದ ಕೆಲಸ ಶುರು ಮಾಡಲು ಹಣ ಕೇಳುವುದಿಲ್ಲ.",
+        "unlock-fee" to "ನಿಮ್ಮದೇ ಹಣ ತೆಗೆಯುವ ಮೊದಲು ಹಣ ಕೇಳುತ್ತದೆ. ಆ ಹಣ ಎಂದಿಗೂ ವಾಪಸ್ ಬರುವುದಿಲ್ಲ.",
+        "investment" to "ಖಚಿತ ಅಥವಾ ತುಂಬಾ ಹೆಚ್ಚಿನ ಲಾಭದ ಭರವಸೆ. ನಿಜವಾದ ಹೂಡಿಕೆ ಎಂದಿಗೂ ಖಾತರಿ ನೀಡುವುದಿಲ್ಲ.",
+        "sextortion" to "ಖಾಸಗಿ ವಿಡಿಯೋ ಅಥವಾ ಫೋಟೋ ಹಂಚುವ ಬೆದರಿಕೆ. ಹಣ ಕೊಟ್ಟರೂ ಇದು ನಿಲ್ಲುವುದಿಲ್ಲ; ದೂರು ನೀಡಿ.",
+        "customer-care" to "ರಿಫಂಡ್ ಅಥವಾ ಗ್ರಾಹಕ ಸೇವೆಯ ಕಥೆ. ನಿಜವಾದ ಕಂಪನಿಗಳು ಹಣ ಹಿಂದಿರುಗಿಸಲು ಕರೆ ಮಾಡುವುದಿಲ್ಲ.",
+        "family-emergency" to "ಕುಟುಂಬದವರು ತೊಂದರೆಯಲ್ಲಿದ್ದಾರೆ ಎನ್ನುತ್ತದೆ. ಮೊದಲು ಅವರಿಗೆ ನೀವೇ ಕರೆ ಮಾಡಿ.",
         "parcel" to "ಪಾರ್ಸೆಲ್ ಅಥವಾ ಕೊರಿಯರ್ ಬಗ್ಗೆ ಹೇಳುತ್ತದೆ, ಈ ವಂಚನೆ ಸಾಮಾನ್ಯವಾಗಿ ಹೀಗೇ ಶುರುವಾಗುತ್ತದೆ.",
         "side-channel" to "ವಾಟ್ಸಾಪ್, ಟೆಲಿಗ್ರಾಂ ಅಥವಾ ಲಿಂಕ್‌ಗೆ ಕರೆದೊಯ್ಯುತ್ತದೆ. ಅಧಿಕೃತ ನೋಟಿಸ್‌ಗಳು ಹೀಗೆ ಮಾಡುವುದಿಲ್ಲ.",
         "bank" to "ನಿಮ್ಮ ಬ್ಯಾಂಕ್ ಖಾತೆ, ಕಾರ್ಡ್ ಅಥವಾ ಓಟಿಪಿ ಬಗ್ಗೆ ಕೇಳುತ್ತದೆ. ಸರಿಯಾದ ಯಾರೂ ಹೀಗೆ ಕೇಳುವುದಿಲ್ಲ.",
         "money-amount" to "ಒಂದು ಮೊತ್ತವನ್ನು ಹೇಳುತ್ತದೆ. ನಿಜವಾದ ಪ್ರಕರಣ ಫೋನಿನಲ್ಲಿ ಹಣ ಕೊಟ್ಟು ಮುಗಿಯುವುದಿಲ್ಲ.",
     )
+
+    // --- naming the scam ------------------------------------------------------------
+
+    /**
+     * The scam, named. [kind] is a ScamKind name. English keeps the ScamKind's own title so
+     * the two never drift; GENERIC has no name and the plain verdict headline is used.
+     */
+    fun kindTitle(lang: String, kind: String, english: String): String = when (lang) {
+        "hi" -> when (kind) {
+            "DIGITAL_ARREST" -> "डिजिटल अरेस्ट ठगी"
+            "SEXTORTION" -> "वीडियो कॉल ब्लैकमेल ठगी"
+            "JOB" -> "पार्ट-टाइम नौकरी ठगी"
+            "INVESTMENT" -> "निवेश ठगी"
+            "FAMILY_EMERGENCY" -> "परिवार वाले के मुसीबत में होने की ठगी"
+            "CUSTOMER_CARE" -> "नकली कस्टमर केयर ठगी"
+            "BANK_KYC" -> "केवाईसी ठगी"
+            "COURIER" -> "पार्सल ठगी"
+            else -> english
+        }
+        "kn" -> when (kind) {
+            "DIGITAL_ARREST" -> "ಡಿಜಿಟಲ್ ಅರೆಸ್ಟ್ ವಂಚನೆ"
+            "SEXTORTION" -> "ವಿಡಿಯೋ ಕರೆ ಬ್ಲ್ಯಾಕ್‌ಮೇಲ್ ವಂಚನೆ"
+            "JOB" -> "ಪಾರ್ಟ್-ಟೈಮ್ ಉದ್ಯೋಗ ವಂಚನೆ"
+            "INVESTMENT" -> "ಹೂಡಿಕೆ ವಂಚನೆ"
+            "FAMILY_EMERGENCY" -> "ಕುಟುಂಬದವರು ತೊಂದರೆಯಲ್ಲಿದ್ದಾರೆ ಎಂಬ ವಂಚನೆ"
+            "CUSTOMER_CARE" -> "ನಕಲಿ ಗ್ರಾಹಕ ಸೇವೆ ವಂಚನೆ"
+            "BANK_KYC" -> "ಕೆವೈಸಿ ವಂಚನೆ"
+            "COURIER" -> "ಪಾರ್ಸೆಲ್ ವಂಚನೆ"
+            else -> english
+        }
+        else -> english
+    }
+
+    /**
+     * A verdict headline that names the scam when the markers say which one. [heard] is for
+     * Ask Kaavalu, where the user described the call rather than showing a document.
+     */
+    fun kindHeadline(
+        lang: String,
+        verdict: String,
+        kind: String,
+        englishTitle: String,
+        heard: Boolean = false,
+    ): String {
+        val flagged = verdict == "SCAM" || verdict == "SUSPICIOUS"
+        if (!flagged || kind == "GENERIC") return verdictHeadline(lang, verdict)
+        val t = kindTitle(lang, kind, englishTitle)
+        return when (verdict) {
+            "SCAM" -> when (lang) {
+                "kn" -> "ಇದು $t"
+                "hi" -> "यह $t है"
+                else -> "This is $t"
+            }
+            else -> when {
+                heard && lang == "kn" -> "ಇದು $t ಇದ್ದಂತೆ ಕೇಳಿಸುತ್ತದೆ"
+                heard && lang == "hi" -> "यह $t जैसा सुनाई देता है"
+                heard -> "This sounds like $t"
+                lang == "kn" -> "ಇದು $t ಇದ್ದಂತೆ ಕಾಣುತ್ತದೆ"
+                lang == "hi" -> "यह $t जैसा लगता है"
+                else -> "This looks like $t"
+            }
+        }
+    }
+
+    /** Ask Kaavalu, when nothing known was heard. */
+    fun noSignsHeard(lang: String) = when (lang) {
+        "kn" -> "ವಂಚನೆಯ ಲಕ್ಷಣ ಕೇಳಿಸಲಿಲ್ಲ"
+        "hi" -> "ठगी के लक्षण सुनाई नहीं दिए"
+        else -> "No scam signs heard"
+    }
 
     /** Every marker id the scanner can produce, so a test can prove none is missing. */
     val IDS: Set<String> = HINDI.keys + KANNADA.keys
