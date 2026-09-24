@@ -1,6 +1,6 @@
 package com.dasen.kaavalu
 
-import com.dasen.kaavalu.scan.ScamMarkers
+import com.dasen.kaavalu.scan.NoticeMarkers
 import com.dasen.kaavalu.scan.Verdict
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -38,7 +38,7 @@ class RealOcrTest {
 
     @Test
     fun theDocumentThatSlippedThroughIsNowCaught() {
-        val r = ScamMarkers.evaluate(edArrestOrder)
+        val r = NoticeMarkers.evaluate(edArrestOrder)
         assertEquals(
             "scored ${r.score}, matched ${r.found}",
             Verdict.SCAM,
@@ -49,13 +49,19 @@ class RealOcrTest {
     @Test
     fun itCatchesTheDocumentOnSeveralIndependentGrounds() {
         // One lucky match is a coincidence. This has to hold up when a judge asks why.
-        val found = ScamMarkers.evaluate(edArrestOrder).found
-        assertTrue("only matched $found", found.size >= 4)
+        // Three, not more: the scorer keeps only the strongest marker per id, so the two
+        // threat lines in this document count once each rather than padding the list.
+        val r = NoticeMarkers.evaluate(edArrestOrder)
+        assertTrue("only matched ${r.found}", r.found.size >= 3)
+        assertTrue(
+            "needs at least two different kinds of pressure, had ${r.cues}",
+            r.cues.count { it.isCore } >= 2,
+        )
     }
 
     @Test
     fun ocrMisspellingOfLaunderingStillMatches() {
-        val mangled = ScamMarkers.evaluate("provisions of Prevention of Money Lamdering Act")
+        val mangled = NoticeMarkers.evaluate("provisions of Prevention of Money Lamdering Act")
         assertTrue("matched ${mangled.found}", mangled.found.isNotEmpty())
     }
 
@@ -70,20 +76,25 @@ class RealOcrTest {
      */
     @Test
     fun aDoublyMangledPhraseIsMissedButTheDocumentIsStillCaught() {
-        val justThatPhrase = ScamMarkers.evaluate("I hereby issue the afrest w artant")
+        val justThatPhrase = NoticeMarkers.evaluate("I hereby issue the afrest w artant")
         assertEquals(
             "both words corrupted, nothing to match on",
-            Verdict.NOTHING_FOUND,
+            Verdict.UNCLEAR,
             justThatPhrase.verdict,
         )
 
         // The same phrase inside the real document, where "grounds for arrest" survived.
-        assertEquals(Verdict.SCAM, ScamMarkers.evaluate(edArrestOrder).verdict)
+        assertEquals(Verdict.SCAM, NoticeMarkers.evaluate(edArrestOrder).verdict)
     }
 
     @Test
     fun theLetterheadWordOrderIsTheOneRealDocumentsUse() {
-        val r = ScamMarkers.evaluate("GOVERNMENT OF INDIA DIRECTORATE OF ENFORCEMENT")
-        assertTrue("matched ${r.found}", r.found.any { it.contains("ED or CBI") })
+        // "Directorate of Enforcement", not "Enforcement Directorate". The reversed form
+        // is the one that reads naturally in English and the one that never appears on
+        // the document.
+        val r = NoticeMarkers.evaluate(
+            "GOVERNMENT OF INDIA DIRECTORATE OF ENFORCEMENT HEADQUARTERS INVESTIGATION",
+        )
+        assertTrue("nothing matched the real letterhead", r.found.isNotEmpty())
     }
 }

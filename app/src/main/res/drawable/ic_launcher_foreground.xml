@@ -3,20 +3,21 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <!-- The watchman shield, with a K cut out of it. -->
+    <!--
+      The watchman's badge: a shield carrying a K. Everything sits inside the 66dp adaptive
+      safe zone (x and y roughly 21..87) so no launcher mask can clip the letter.
+    -->
     <path
         android:fillColor="#FFFBF7F0"
-        android:pathData="M54,25 L78,33 L78,56 C78,70 68,81 54,87 C40,81 30,70 30,56 L30,33 Z" />
-    <!-- K: upright stem -->
+        android:pathData="M54,23 L79,32.5 L79,54 C79,68.5 68.5,80.5 54,86 C39.5,80.5 29,68.5 29,54 L29,32.5 Z" />
+    <!-- A gold bar under the K: the same accent the warning screen uses. -->
     <path
-        android:fillColor="#FF14432B"
-        android:pathData="M45,41 L52,41 L52,72 L45,72 Z" />
-    <!-- K: upper arm -->
+        android:fillColor="#FFFFD58A"
+        android:pathData="M42,73 L66,73 L66,76.5 L42,76.5 Z" />
     <path
-        android:fillColor="#FF14432B"
-        android:pathData="M66,41 L57,41 L52,54 L52,60 Z" />
-    <!-- K: lower leg -->
-    <path
-        android:fillColor="#FF14432B"
-        android:pathData="M52,54 L57,72 L66,72 L56,50 Z" />
+        android:strokeColor="#FF1F3D2B"
+        android:strokeWidth="7.5"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M44,39 L44,66 M65,39 L48.5,55 M52.5,51.5 L65.5,66" />
 </vector>

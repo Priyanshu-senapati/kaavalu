@@ -96,6 +96,21 @@
                 android:value="Real-time scam call risk monitoring for the device owner" />
         </service>
 
+        <!--
+          Full-resolution notice photos. TakePicturePreview only hands back a thumbnail, and
+          OCR cannot read body text off a thumbnail, so the camera writes to a cache file
+          this provider owns and the scanner reads that.
+        -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.scans"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
+
         <receiver android:name=".service.BootReceiver" android:exported="false">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />

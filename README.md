@@ -1,4 +1,4 @@
-# ಕಾವಲು — Kaavalu
+# Kaavalu — ಕಾವಲು
 
 An on-device guardian that recognises the behavioural signature of a "digital arrest" scam
 while it is happening, interrupts the victim in their own language, and brings their family
@@ -14,7 +14,7 @@ Open the folder in Android Studio and press Run, or from a terminal:
 
 ```bash
 ./gradlew :app:assembleDebug        # builds app/build/outputs/apk/debug/app-debug.apk
-./gradlew :app:testDebugUnitTest    # 19 unit tests: engine, markers, translations, SMS
+./gradlew :app:testDebugUnitTest    # 28 unit tests: engine, markers, translations, SMS
 ./gradlew installDebug              # to a connected phone
 ```
 
@@ -60,8 +60,48 @@ com/dasen/kaavalu/
 │   └── InterruptActivity.kt  the full-screen warning with its breakdown
 ├── scan/NoticeScanner.kt     ML Kit OCR + NoticeMarkers (pure, unit tested)
 ├── service/                  foreground service + boot receiver
-└── ui/                       onboarding ladder, home, scan, ask, demo console
+└── ui/
+    ├── MainActivity.kt       the five tabs and the bottom navigation bar
+    ├── Theme.kt              colours and the one-step-larger type scale
+    ├── Components.kt         Panel, ActionTile, BigAction, Meter, BreathingShield
+    ├── Home.kt               shield status, live risk, the three rules
+    ├── ScanScreen.kt         camera -> FileProvider -> OCR -> graded verdict
+    ├── AskScreen.kt          speech, with a keyboard fallback that never fails
+    ├── Onboarding.kt         first-run ladder, and the Setup tab checklist
+    └── DemoConsole.kt        hand-injected signals on compressed time
 ```
+
+## How the notice and speech scoring works
+
+`NoticeMarkers` scores the *shape* of the scam, not its vocabulary. Each marker carries a
+`Cue` — authority, threat, money, secrecy, urgency, isolation, identity, story — and the
+score is the sum of the markers that hit **plus a bonus for how many distinct core cues are
+present at once**. That is what separates a fake warrant that never prints the phrase
+"digital arrest" from a courier slip that happens to say "police station".
+
+| Cues present | Bonus |
+| --- | --- |
+| 0–1 | 0 |
+| 2 | +12 |
+| 3 | +24 |
+| 4 or more | +34 |
+
+The verdict is graded, never a boolean:
+
+| | Notice | Spoken |
+| --- | --- | --- |
+| `SCAM` | 55+ | 45+ |
+| `SUSPICIOUS` | 28+ | 22+ |
+| `UNCLEAR` | below that | below that |
+| `UNREADABLE` | fewer than 14 readable characters came back from OCR | — |
+
+`UNREADABLE` matters more than it looks. A blurred photo used to score zero and be rendered
+as an all-clear for a document the phone had never actually read. And `UNCLEAR` says, in
+words, that it is not proof the notice is genuine.
+
+Written and spoken markers share ids, so the same fact is never counted twice and the
+stronger wording wins. `NoticeMarkersRegressionTest` pins down the documents and sentences
+that the first marker list let through.
 
 ## Tiers
 
@@ -85,7 +125,9 @@ phone to an English, Hindi and Kannada audience in one sitting. Everything the u
 hears follows that choice — including the breakdown lines and the guardian SMS. `CopyTest`
 fails the build if a signal is added without all three translations.
 
-The app name stays ಕಾವಲು everywhere. It is the product name, not a string to translate.
+The wordmark reads **Kaavalu** with ಕಾವಲು underneath it. The Kannada name is the product's
+name, not a string to translate — but it is not the first thing a family has to decode
+before they will trust the app, so English leads and Kannada sits under it.
 
 ## Demo
 
@@ -105,6 +147,20 @@ Mirror the phone with `scrcpy` over USB so the jury sees the interrupt.
 so if D scans the fake warrant before the call demo, every number above shifts up by 20 and
 the interrupt fires sooner. Either scan after the call demo, or rehearse with the higher
 numbers and explain the link — it is a good thing to show, just not to be surprised by.
+
+## Things that will bite you if they are changed back
+
+1. **The camera must not use `TakePicturePreview()`.** It returns a thumbnail, and OCR
+   cannot read body text off a thumbnail — the scan then reports "no scam markers found"
+   for a notice it never read. `ScanScreen` writes a full-size JPEG through the
+   `FileProvider` declared in the manifest and reads that back.
+2. **`EXTRA_PREFER_OFFLINE` must not be forced on.** On a phone with no downloaded language
+   model it returns nothing at all. `AskScreen` asks online first and retries offline only
+   after a network error.
+3. **Score every recognizer alternative, not just the first.** "under arrest" and "under a
+   rest" are one sentence to a person and two different strings to a regex.
+4. **Keep the keyboard fallback.** A demo that depends on a microphone in a loud hall is a
+   demo that fails in front of the jury.
 
 ## Before the demo — things that still need a real phone
 

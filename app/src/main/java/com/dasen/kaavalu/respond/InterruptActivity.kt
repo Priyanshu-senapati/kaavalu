@@ -13,6 +13,8 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
@@ -62,7 +64,11 @@ class InterruptActivity : ComponentActivity() {
             Column(
                 Modifier
                     .fillMaxSize()
-                    .background(Alarm),
+                    .background(Alarm)
+                    // Insets from PR #1: without these the title sits under the status bar
+                    // and the last button under the gesture pill.
+                    .statusBarsPadding()
+                    .navigationBarsPadding(),
             ) {
                 Column(
                     Modifier
@@ -73,45 +79,50 @@ class InterruptActivity : ComponentActivity() {
                 ) {
                     Spacer(Modifier.height(32.dp))
 
-                Text(
-                    Copy.interruptTitle(lang),
-                    color = Color.White,
-                    fontSize = 32.sp,
-                    fontWeight = FontWeight.Bold,
-                    lineHeight = 38.sp,
-                )
-                Text(Copy.interruptBody(lang), color = Color.White, fontSize = 20.sp, lineHeight = 28.sp)
+                    Text(
+                        Copy.interruptTitle(lang),
+                        color = Color.White,
+                        fontSize = 32.sp,
+                        fontWeight = FontWeight.Bold,
+                        lineHeight = 38.sp,
+                    )
+                    Text(
+                        Copy.interruptBody(lang),
+                        color = Color.White,
+                        fontSize = 20.sp,
+                        lineHeight = 28.sp,
+                    )
 
-                Text(
-                    Copy.whyHeading(lang, s.score),
-                    color = Gold,
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold,
-                )
-                s.contributions.forEach { c ->
-                    Row(verticalAlignment = Alignment.Top) {
-                        Text(
-                            "+${c.points}",
-                            color = Gold,
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.width(44.dp),
-                        )
-                        Column {
+                    Text(
+                        Copy.whyHeading(lang, s.score),
+                        color = Gold,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                    )
+                    s.contributions.forEach { c ->
+                        Row(verticalAlignment = Alignment.Top) {
                             Text(
-                                Copy.reasonFor(lang, c.key, c.arg),
-                                color = Color.White,
+                                "+${c.points}",
+                                color = Gold,
                                 fontSize = 16.sp,
-                                lineHeight = 22.sp,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.width(44.dp),
                             )
-                            Text(
-                                Copy.sourceFor(lang, c.key),
-                                color = Color.White.copy(alpha = 0.7f),
-                                fontSize = 13.sp,
-                            )
+                            Column {
+                                Text(
+                                    Copy.reasonFor(lang, c.key, c.arg),
+                                    color = Color.White,
+                                    fontSize = 16.sp,
+                                    lineHeight = 22.sp,
+                                )
+                                Text(
+                                    Copy.sourceFor(lang, c.key),
+                                    color = Color.White.copy(alpha = 0.7f),
+                                    fontSize = 13.sp,
+                                )
+                            }
                         }
                     }
-                }
 
                     Text(
                         Copy.uncertainty(lang),

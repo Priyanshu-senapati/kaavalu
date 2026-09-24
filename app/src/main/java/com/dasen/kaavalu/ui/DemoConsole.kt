@@ -46,13 +46,13 @@ import com.dasen.kaavalu.core.SignalBus
  * not forgive finding out afterwards.
  */
 @Composable
-fun DemoConsole(engine: RiskEngine, modifier: Modifier = Modifier) {
+fun DemoConsole(engine: RiskEngine, onBack: () -> Unit) {
     val lang = Prefs.language(LocalContext.current)
     val s by engine.state.collectAsStateWithLifecycle()
     var demoTime by remember { mutableStateOf(engine.config.timeScale > 1.0) }
 
     Column(
-        modifier
+        Modifier
             .fillMaxSize()
             .background(Paper)
             .verticalScroll(rememberScrollState())
@@ -60,7 +60,7 @@ fun DemoConsole(engine: RiskEngine, modifier: Modifier = Modifier) {
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         Spacer(Modifier.height(16.dp))
-        Text("Demo console", style = MaterialTheme.typography.headlineMedium)
+        ScreenHeader("Demo console", "Signals injected by hand, on compressed time.", onBack)
         Text(
             "Risk " + s.score + "/100  |  " + s.tier.name,
             style = MaterialTheme.typography.titleLarge,
@@ -107,6 +107,29 @@ fun DemoConsole(engine: RiskEngine, modifier: Modifier = Modifier) {
             )
         }
         DemoButton("End call") { SignalBus.emit(Signal.CallEnded) }
+        DemoButton("Flagged notice (+20 for 48h)") {
+            SignalBus.emit(
+                Signal.NoticeFlagged(70, listOf("Threatens immediate arrest.")),
+            )
+        }
+
+        // The family member who set this up has never seen the thing they installed actually
+        // fire. One button that shows them is worth more than any amount of screenshots.
+        Text(
+            "Show the family what a warning looks like",
+            style = MaterialTheme.typography.titleMedium,
+        )
+        DemoButton("Run the full warning now") {
+            SignalBus.emit(
+                Signal.CallStarted(
+                    number = "+91 98xxx xxx01",
+                    channel = Channel.WHATSAPP,
+                    isKnown = false,
+                    isVideo = true,
+                ),
+            )
+            SignalBus.emit(Signal.SensitiveAppOpened("com.phonepe.app", AppKind.PAYMENT))
+        }
 
         OutlinedButton(onClick = { engine.reset() }, modifier = Modifier.fillMaxWidth()) {
             Text("Reset")
