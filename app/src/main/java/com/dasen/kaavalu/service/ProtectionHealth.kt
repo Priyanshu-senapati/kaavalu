@@ -67,6 +67,10 @@ object ProtectionHealth {
         )
     }
 
+    fun cancel(ctx: Context) {
+        ctx.getSystemService(AlarmManager::class.java)?.cancel(pending(ctx))
+    }
+
     private fun pending(ctx: Context) = PendingIntent.getBroadcast(
         ctx, 0,
         Intent(ctx, HealthCheckReceiver::class.java),

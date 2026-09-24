@@ -135,8 +135,13 @@ fun Home(engine: RiskEngine, navigate: (Screen) -> Unit) {
  * survive both a tab switch (which destroys Home's composition) and a rotation (which destroys
  * the Activity), because in neither case has protection just been turned on.
  */
-private object ShieldLanding {
+internal object ShieldLanding {
     private var played = false
+
+    /** Setup is starting again, so arming is a moment again. */
+    fun rearm() {
+        played = false
+    }
 
     fun consume(armed: Boolean): Boolean {
         if (!armed || played) return false

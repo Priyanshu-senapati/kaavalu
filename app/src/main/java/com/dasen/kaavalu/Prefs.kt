@@ -67,5 +67,10 @@ object Prefs {
         p(c).edit().putBoolean("health_alerted", alerted).apply()
     }
 
+    /** Everything this app knows about the family. Synchronous: the next screen reads it. */
+    fun clearAll(c: Context) {
+        p(c).edit().clear().commit()
+    }
+
     fun trustedCount(c: Context): Int = p(c).getStringSet("trusted", emptySet())!!.size
 }

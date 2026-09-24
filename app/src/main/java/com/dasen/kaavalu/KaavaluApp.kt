@@ -70,6 +70,25 @@ class KaavaluApp : Application() {
         fun engineOf(c: Context): RiskEngine =
             (c.applicationContext as KaavaluApp).engine
 
+        /**
+         * Back to a phone that has never been set up: for a new person, or to show setup to
+         * someone from the first screen. There are no accounts to sign out of — everything
+         * Kaavalu knows lives on this phone — so this clears it all and stops protection
+         * until setup is finished again. Android permissions stay granted: an app cannot
+         * revoke its own, and setup will simply show each step as already on.
+         */
+        fun startOver(c: Context) {
+            val ctx = c.applicationContext
+            engineOf(ctx).reset()
+            com.dasen.kaavalu.respond.Guardian.reset()
+            ctx.stopService(Intent(ctx, GuardianService::class.java))
+            com.dasen.kaavalu.service.ProtectionHealth.cancel(ctx)
+            ctx.getSystemService(android.app.NotificationManager::class.java)?.cancelAll()
+            // The last photographed notice sits in the cache; it belongs to the old setup.
+            java.io.File(ctx.cacheDir, "scans").deleteRecursively()
+            Prefs.clearAll(ctx)
+        }
+
         fun startGuarding(c: Context) {
             val ctx = c.applicationContext
             ctx.startForegroundService(Intent(ctx, GuardianService::class.java))

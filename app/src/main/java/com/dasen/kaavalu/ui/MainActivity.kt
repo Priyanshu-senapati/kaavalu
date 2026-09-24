@@ -157,6 +157,12 @@ class MainActivity : ComponentActivity() {
                                 Screen.SETUP -> Onboarding(
                                     firstRun = false,
                                     onOpenDemo = { screen = Screen.DEMO },
+                                    onStartOver = {
+                                        KaavaluApp.startOver(this@MainActivity)
+                                        ShieldLanding.rearm()
+                                        screen = Screen.HOME
+                                        onboarded = false
+                                    },
                                 ) { screen = Screen.HOME }
                                 Screen.DEMO -> DemoConsole(engine) { screen = Screen.SETUP }
                                 Screen.RECOVER -> RecoveryScreen(
