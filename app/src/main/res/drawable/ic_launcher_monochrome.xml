@@ -1,0 +1,21 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!--
+      Themed icons are flattened to one colour, so a filled shield would swallow the K.
+      Both are drawn as strokes instead, which survives the tint.
+    -->
+    <path
+        android:strokeColor="#FF000000"
+        android:strokeWidth="6"
+        android:strokeLineJoin="round"
+        android:pathData="M54,23 L79,32.5 L79,54 C79,68.5 68.5,80.5 54,86 C39.5,80.5 29,68.5 29,54 L29,32.5 Z" />
+    <path
+        android:strokeColor="#FF000000"
+        android:strokeWidth="6.5"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M45,40 L45,65 M64,40 L49,54.5 M52.5,51.5 L64,65" />
+</vector>

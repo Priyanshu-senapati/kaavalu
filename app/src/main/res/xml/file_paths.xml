@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Where the notice photo is written. Cache, not external storage: the image is OCR'd on
+  device and then it is nobody's business, least of all the gallery's.
+-->
+<paths>
+    <cache-path name="scans" path="scans/" />
+</paths>
