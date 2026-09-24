@@ -37,10 +37,18 @@ data class RiskConfig(
  */
 data class Contribution(val key: String, val arg: Int, val points: Int, val at: Long)
 
+/**
+ * The moment the session crossed into a tier. Recorded separately from contributions
+ * because "Kaavalu interrupted" is not a signal the phone saw, it is something the app
+ * did, and a timeline that shows only the evidence leaves out the response to it.
+ */
+data class Escalation(val tier: Tier, val at: Long)
+
 data class RiskState(
     val score: Int = 0,
     val tier: Tier = Tier.CALM,
     val contributions: List<Contribution> = emptyList(),
+    val escalations: List<Escalation> = emptyList(),
     val sessionActive: Boolean = false,
     val caller: String? = null,
 )
@@ -141,12 +149,21 @@ class RiskEngine(
     private fun add(key: String, points: Int, arg: Int = 0) {
         val cur = _state.value
         if (!cur.sessionActive || !fired.add(key)) return
+        val at = now()
         val score = (cur.score + points).coerceAtMost(100)
-        val entry = Contribution(key, arg, points, now())
+        val entry = Contribution(key, arg, points, at)
+        val tier = maxOf(cur.tier, tierFor(score))
         _state.value = cur.copy(
             score = score,
-            tier = maxOf(cur.tier, tierFor(score)),
+            tier = tier,
             contributions = cur.contributions + entry,
+            // Every tier crossed, not just the one landed on. A single signal can carry
+            // the score from Watch past Interrupt to Guardian, and the responder does
+            // raise the interrupt in that case, so a record that named only the final
+            // tier would say the warning never happened.
+            escalations = cur.escalations + Tier.entries
+                .filter { it > cur.tier && it <= tier }
+                .map { Escalation(it, at) },
         )
     }
 

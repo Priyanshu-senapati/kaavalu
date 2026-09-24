@@ -124,6 +124,15 @@ class InterruptActivity : ComponentActivity() {
                         }
                     }
 
+                    // The signals say what was seen. This says why it should worry you,
+                    // which is the part a frightened person cannot work out alone.
+                    Text(
+                        Copy.whyThisMatters(lang),
+                        color = Gold,
+                        fontSize = 16.sp,
+                        lineHeight = 23.sp,
+                    )
+
                     Text(
                         Copy.uncertainty(lang),
                         color = Color.White.copy(alpha = 0.85f),

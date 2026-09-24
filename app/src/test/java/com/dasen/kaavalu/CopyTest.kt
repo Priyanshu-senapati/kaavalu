@@ -31,6 +31,29 @@ class CopyTest {
     }
 
     @Test
+    fun theTimelineSpeaksEveryLanguageToo() {
+        // Added with the timeline. Without this the new strings sit outside the guarantee
+        // the rest of Copy.kt is held to, and an untranslated line ships unnoticed.
+        for ((lang, _) in Copy.languages) {
+            assertTrue(Copy.timelineHeading(lang).isNotBlank())
+            assertTrue(Copy.whyThisMatters(lang).isNotBlank())
+            for (tier in listOf("WATCH", "INTERRUPT", "GUARDIAN")) {
+                val label = Copy.escalationLabel(lang, tier)
+                assertTrue("$lang/$tier has no label", label.isNotBlank())
+                if (lang != "en") {
+                    assertNotEquals(
+                        "$lang/$tier is still English",
+                        Copy.escalationLabel("en", tier),
+                        label,
+                    )
+                }
+            }
+        }
+        // CALM is not an escalation and must not appear on the timeline.
+        assertTrue(Copy.escalationLabel("en", "CALM").isEmpty())
+    }
+
+    @Test
     fun breakdownLinesAreTranslatedNotLeftInEnglish() {
         for (key in keys) {
             val english = Copy.reasonFor("en", key, 20)

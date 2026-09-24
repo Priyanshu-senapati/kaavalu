@@ -93,9 +93,16 @@ fun Home(engine: RiskEngine, navigate: (Screen) -> Unit) {
                     style = MaterialTheme.typography.bodySmall,
                     color = Muted,
                 )
-                state.contributions.forEach { c ->
-                    ReasonRow(c.points, Copy.reasonFor(lang, c.key, c.arg), colour)
-                }
+                // The timeline replaces the flat list here: on the home screen the
+                // question is "how did this build up?", not "what is the total?", and
+                // the total is already the big number above.
+                Timeline(
+                    contributions = state.contributions,
+                    escalations = state.escalations,
+                    lang = lang,
+                    scale = engine.config.timeScale,
+                    modifier = Modifier.padding(top = 6.dp),
+                )
             }
         }
 

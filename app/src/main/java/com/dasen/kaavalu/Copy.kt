@@ -190,6 +190,47 @@ object Copy {
             "No action needed."
     }
 
+    /**
+     * The timeline entries for what Kaavalu itself did, as opposed to what it noticed.
+     * A record of escalation is only honest if it includes the app's own actions.
+     */
+    fun escalationLabel(lang: String, tier: String): String = when (tier) {
+        "WATCH" -> when (lang) {
+            "kn" -> "ಕಾವಲು ಗಮನಿಸಲು ಶುರು ಮಾಡಿತು"
+            "hi" -> "कावलु ने ध्यान देना शुरू किया"
+            else -> "Kaavalu started watching"
+        }
+        "INTERRUPT" -> when (lang) {
+            "kn" -> "ಕಾವಲು ಕರೆಯನ್ನು ತಡೆದು ಎಚ್ಚರಿಸಿತು"
+            "hi" -> "कावलु ने रोककर चेतावनी दी"
+            else -> "Kaavalu interrupted the call"
+        }
+        "GUARDIAN" -> when (lang) {
+            "kn" -> "ಕುಟುಂಬಕ್ಕೆ ಸಂದೇಶ ಕಳುಹಿಸಲಾಯಿತು"
+            "hi" -> "परिवार को संदेश भेजा गया"
+            else -> "Your family was told"
+        }
+        else -> ""
+    }
+
+    /** Heading over the timeline. */
+    fun timelineHeading(lang: String) = when (lang) {
+        "kn" -> "ಇದು ಹೇಗೆ ಬೆಳೆಯಿತು"
+        "hi" -> "यह कैसे बढ़ा"
+        else -> "How this built up"
+    }
+
+    /**
+     * The one line the interrupt was missing: what the pattern actually means. The list of
+     * signals says what was seen; this says why a person should care.
+     */
+    fun whyThisMatters(lang: String) = when (lang) {
+        "kn" -> "ವಂಚಕರು ಮೊದಲು ಆತಂಕ ಹುಟ್ಟಿಸುತ್ತಾರೆ, ನಿಮ್ಮನ್ನು ಒಬ್ಬಂಟಿಯಾಗಿಸುತ್ತಾರೆ, ಆಮೇಲೆ ಹಣ ಕೇಳುತ್ತಾರೆ. ಈ ಕರೆ ಅದೇ ದಾರಿಯಲ್ಲಿ ಸಾಗಿದೆ."
+        "hi" -> "ठग पहले डर पैदा करते हैं, फिर आपको अकेला करते हैं, और तब पैसे मांगते हैं। यह कॉल उसी रास्ते पर चली है।"
+        else -> "Scammers build fear, cut you off from everyone, and only then ask for money. " +
+            "This call has followed that order."
+    }
+
     /** Spoken answer for "Ask Kaavalu" when the description matches the digital arrest script. */
     fun askScamAnswer(lang: String) = when (lang) {
         "kn" -> "ಇದು ಪ್ರಸಿದ್ಧ ವಂಚನೆ. ಯಾವ ಸಂಸ್ಥೆಯೂ ಕರೆಯಲ್ಲಿ ಬಂಧಿಸುವುದಿಲ್ಲ. ಹಣ ಕಳುಹಿಸಬೇಡಿ. ಕುಟುಂಬಕ್ಕೆ ಅಥವಾ 1930 ಗೆ ಕರೆ ಮಾಡಿ."
