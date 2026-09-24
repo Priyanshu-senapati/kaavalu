@@ -18,7 +18,7 @@ import androidx.core.app.NotificationManagerCompat
  */
 enum class Step(val title: String, val why: String) {
     CALL_SCREENING(
-        "Let Kaavalu see incoming calls",
+        "Incoming calls",
         "So Kaavalu knows when an unknown number calls. It never blocks or records calls.",
     ),
     RUNTIME(

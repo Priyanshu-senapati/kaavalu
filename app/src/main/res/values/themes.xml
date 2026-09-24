@@ -1,6 +1,7 @@
 <resources>
 
     <style name="Theme.Kaavalu" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@color/kaavalu_paper</item>
         <item name="android:statusBarColor">@color/kaavalu_paper</item>
         <item name="android:navigationBarColor">@color/kaavalu_paper</item>
         <item name="android:windowLightStatusBar">true</item>
@@ -8,8 +9,11 @@
 
     <!-- The interrupt must read as an emergency, not as a page of the app. -->
     <style name="Theme.Kaavalu.Interrupt" parent="android:Theme.Material.NoActionBar">
-        <item name="android:statusBarColor">@color/kaavalu_alarm</item>
-        <item name="android:navigationBarColor">@color/kaavalu_alarm</item>
+        <!-- The window itself is the warning: the first frame is oxblood before Compose has
+             drawn a pixel, so there is never a flash of the system's grey. -->
+        <item name="android:windowBackground">@color/kaavalu_alarm_deep</item>
+        <item name="android:statusBarColor">@color/kaavalu_alarm_deep</item>
+        <item name="android:navigationBarColor">@color/kaavalu_alarm_deep</item>
         <item name="android:windowLightStatusBar">false</item>
     </style>
 
