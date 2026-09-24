@@ -62,6 +62,7 @@ import com.dasen.kaavalu.R
 import com.dasen.kaavalu.scan.Cue
 import com.dasen.kaavalu.scan.NoticeMarkers
 import com.dasen.kaavalu.scan.NoticeScanner
+import com.dasen.kaavalu.scan.ScamKind
 import com.dasen.kaavalu.scan.ScanResult
 import com.dasen.kaavalu.scan.Verdict
 import com.google.mlkit.vision.common.InputImage
@@ -400,8 +401,16 @@ private fun VerdictSheet(r: ScanResult) {
     val locked = revealed >= tallyRows(lines.size) && stage >= 2
 
     val (sign, headline, tone) = when (r.verdict) {
-        Verdict.SCAM -> Triple("Scam", "This is a scam notice", Tone.Danger)
-        Verdict.SUSPICIOUS -> Triple("Suspicious", "This looks like a scam", Tone.Checking)
+        Verdict.SCAM -> Triple(
+            "Scam",
+            if (r.kind == ScamKind.GENERIC) "This is a scam notice" else "This is ${r.kind.title}",
+            Tone.Danger,
+        )
+        Verdict.SUSPICIOUS -> Triple(
+            "Suspicious",
+            if (r.kind == ScamKind.GENERIC) "This looks like a scam" else "This looks like ${r.kind.title}",
+            Tone.Checking,
+        )
         Verdict.UNCLEAR -> Triple("No scam signs", "No known scam phrases found", Tone.Neutral)
         Verdict.UNREADABLE -> Triple("Unreadable", "Kaavalu couldn’t read that", Tone.Neutral)
     }

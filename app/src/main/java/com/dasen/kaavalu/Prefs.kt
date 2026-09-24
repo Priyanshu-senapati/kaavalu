@@ -48,5 +48,24 @@ object Prefs {
         p(c).edit().putStringSet("trusted", set).apply()
     }
 
+    /**
+     * Recent calls from unknown numbers, encoded by [com.dasen.kaavalu.core.CallHistory].
+     * Read once from the older single-call key, so a phone that recorded a call before the
+     * history existed does not lose it.
+     */
+    fun history(c: Context): String? =
+        p(c).getString("history", null) ?: p(c).getString("last_session", null)
+
+    fun setHistory(c: Context, encoded: String) {
+        p(c).edit().putString("history", encoded).remove("last_session").apply()
+    }
+
+    /** Whether the family has already been told that protection stopped, this outage. */
+    fun healthAlerted(c: Context): Boolean = p(c).getBoolean("health_alerted", false)
+
+    fun setHealthAlerted(c: Context, alerted: Boolean) {
+        p(c).edit().putBoolean("health_alerted", alerted).apply()
+    }
+
     fun trustedCount(c: Context): Int = p(c).getStringSet("trusted", emptySet())!!.size
 }

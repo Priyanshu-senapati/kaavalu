@@ -12,5 +12,9 @@ class BootReceiver : BroadcastReceiver() {
         if (intent.action != Intent.ACTION_BOOT_COMPLETED) return
         if (!Prefs.onboardingDone(ctx)) return
         runCatching { ctx.startForegroundService(Intent(ctx, GuardianService::class.java)) }
+        // Alarms do not survive a reboot. Re-arm the daily check, and run it now: an update
+        // that reset a permission is most often followed by exactly this restart.
+        ProtectionHealth.schedule(ctx)
+        ProtectionHealth.check(ctx)
     }
 }

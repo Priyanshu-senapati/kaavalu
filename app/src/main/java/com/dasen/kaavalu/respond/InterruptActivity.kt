@@ -48,6 +48,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -101,6 +103,7 @@ class InterruptActivity : ComponentActivity() {
         setContent {
             KaavaluTheme {
                 val s by engine.state.collectAsStateWithLifecycle()
+                val delivery by Guardian.status.collectAsStateWithLifecycle()
 
                 // The evidence waits a beat, so the eye lands on the headline first. The
                 // headline itself waits for nothing.
@@ -220,6 +223,7 @@ class InterruptActivity : ComponentActivity() {
                             .padding(horizontal = Space.xl, vertical = Space.md),
                         verticalArrangement = Arrangement.spacedBy(Space.sm),
                     ) {
+                        FamilyAlertLine(delivery, lang)
                         BigAction(
                             Copy.callFamily(lang),
                             style = ActionStyle.Paper,
@@ -270,6 +274,41 @@ private fun MastRow(score: Int) {
         Row(verticalAlignment = Alignment.Bottom) {
             Text("$score", style = KType.points.copy(fontSize = KType.dial.fontSize, lineHeight = KType.dial.lineHeight), color = Gold)
             Text("/100", style = KType.utility, color = Color.White.copy(alpha = 0.76f), modifier = Modifier.padding(bottom = 4.dp))
+        }
+    }
+}
+
+/**
+ * Whether the family has been told. Pinned with the actions because it changes what the
+ * person should press: if the text went out, help is coming; if it failed, the call button
+ * below is now the only way to reach them, and the line says so.
+ */
+@Composable
+private fun FamilyAlertLine(delivery: Delivery, lang: String) {
+    val text = Copy.guardianStatus(lang, delivery.name)
+    AnimatedVisibility(
+        visible = text.isNotEmpty(),
+        enter = fadeIn(tween(motion(Motion.STANDARD))),
+    ) {
+        val failed = delivery == Delivery.FAILED || delivery == Delivery.NO_PERMISSION
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .semantics { liveRegion = LiveRegionMode.Assertive },
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(
+                painterResource(if (failed) R.drawable.ic_warning else if (delivery == Delivery.SENT) R.drawable.ic_check else R.drawable.ic_family),
+                contentDescription = null,
+                tint = if (failed) Gold else Color.White.copy(alpha = 0.85f),
+                modifier = Modifier.size(22.dp),
+            )
+            Spacer(Modifier.width(Space.sm))
+            Text(
+                text,
+                style = (if (failed) MaterialTheme.typography.titleMedium else MaterialTheme.typography.bodyMedium).script(lang),
+                color = if (failed) Gold else Color.White.copy(alpha = 0.88f),
+            )
         }
     }
 }

@@ -15,6 +15,7 @@ class CopyTest {
     private val keys = listOf(
         "unknown", "unverified", "video", "repeat",
         "dur10", "dur20", "dur40", "payment", "remote", "notice",
+        "international", "install",
     )
 
     @Test
@@ -51,6 +52,23 @@ class CopyTest {
         }
         // CALM is not an escalation and must not appear on the timeline.
         assertTrue(Copy.escalationLabel("en", "CALM").isEmpty())
+    }
+
+    /** Every scam kind gets a spoken answer in every language, and none of them is blank. */
+    @Test
+    fun everyScamKindHasASpokenAnswer() {
+        for ((lang, _) in Copy.languages) {
+            for (kind in com.dasen.kaavalu.scan.ScamKind.entries) {
+                val answer = Copy.askAnswer(lang, scam = true, kind = kind.name)
+                assertTrue("$lang/$kind has no answer", answer.isNotBlank())
+                if (lang != "en") {
+                    assertNotEquals("$lang/$kind is still English", Copy.askAnswer("en", true, kind.name), answer)
+                }
+            }
+        }
+        // The arrest line belongs to the arrest scams only.
+        assertTrue(!Copy.askAnswer("en", true, "JOB").contains("arrest"))
+        assertTrue(!Copy.askAnswer("en", true, "SEXTORTION").contains("arrest"))
     }
 
     @Test

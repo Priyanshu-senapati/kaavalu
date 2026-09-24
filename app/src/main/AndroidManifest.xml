@@ -111,6 +111,8 @@
                 android:resource="@xml/file_paths" />
         </provider>
 
+        <receiver android:name=".service.HealthCheckReceiver" android:exported="false" />
+
         <receiver android:name=".service.BootReceiver" android:exported="false">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />

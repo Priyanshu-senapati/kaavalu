@@ -19,6 +19,10 @@ data class RiskConfig(
     val repeatCaller: Int = 10,
     val paymentAppDuringCall: Int = 30,
     val remoteAccessDuringCall: Int = 35,
+    /** A non-Indian country code on an unknown caller. */
+    val internationalCaller: Int = 20,
+    /** The system app installer opened during a call: an APK is being installed. */
+    val installerDuringCall: Int = 25,
     val flaggedNotice: Int = 20,
     val watchAt: Int = 40,
     val interruptAt: Int = 65,
@@ -51,7 +55,16 @@ data class RiskState(
     val escalations: List<Escalation> = emptyList(),
     val sessionActive: Boolean = false,
     val caller: String? = null,
-)
+    /**
+     * When the call itself ended. The session outlives the call by the post-call window,
+     * so "session active" is not "on a call": this is what tells them apart, and it is how
+     * long the call lasted, which is the first thing a bank or the police asks.
+     */
+    val endedAt: Long? = null,
+) {
+    /** On the phone right now, as opposed to inside the watch window after hanging up. */
+    val onCall: Boolean get() = sessionActive && endedAt == null
+}
 
 /**
  * The only thing that scores. Detectors emit signals; the responder reacts to tiers.
@@ -93,9 +106,12 @@ class RiskEngine(
                     _state.value = RiskState(sessionActive = true, caller = s.number)
                 }
                 callStartedAt = now()
+                // A second call inside the watch window is a call again, not an ended one.
+                if (_state.value.endedAt != null) _state.value = _state.value.copy(endedAt = null)
                 add("unknown", c.unknownCaller)
                 if (s.unverified) add("unverified", c.unverifiedNumber)
                 if (s.isVideo) add("video", c.videoFromUnknown)
+                if (CallerOrigin.isInternational(s.number)) add("international", c.internationalCaller)
                 if (lastNoticeAt > 0L && now() - lastNoticeAt < 48 * HOUR) {
                     add("notice", c.flaggedNotice)
                 }
@@ -105,6 +121,7 @@ class RiskEngine(
             is Signal.CallEnded -> {
                 if (!_state.value.sessionActive) return
                 ticker?.cancel()
+                if (_state.value.endedAt == null) _state.value = _state.value.copy(endedAt = now())
                 // Victims are often told to transfer money right after the call: keep watching.
                 val windowMs = (c.postCallWindowMin * MINUTE / c.timeScale).toLong()
                 closer = scope.launch {
@@ -120,6 +137,7 @@ class RiskEngine(
             is Signal.SensitiveAppOpened -> when (s.kind) {
                 AppKind.PAYMENT -> add("payment", c.paymentAppDuringCall)
                 AppKind.REMOTE_ACCESS -> add("remote", c.remoteAccessDuringCall)
+                AppKind.INSTALLER -> add("install", c.installerDuringCall)
             }
 
             is Signal.NoticeFlagged -> {

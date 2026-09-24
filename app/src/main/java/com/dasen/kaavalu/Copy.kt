@@ -35,9 +35,11 @@ object Copy {
     }
 
     fun watchTitle(lang: String) = when (lang) {
-        "kn" -> "ಎಚ್ಚರ: ಅಪರಿಚಿತ ಸಂಖ್ಯೆಯಿಂದ ದೀರ್ಘ ಕರೆ"
-        "hi" -> "सावधान: अनजान नंबर से लंबी कॉल"
-        else -> "Careful: long call from an unknown number"
+        // Not "long call": Watch is also reached in seconds, by a video call or a foreign
+        // number, and a warning that misdescribes the call is one that gets dismissed.
+        "kn" -> "ಎಚ್ಚರ: ಈ ಕರೆಯಲ್ಲಿ ಎಚ್ಚರಿಕೆಯ ಲಕ್ಷಣಗಳಿವೆ"
+        "hi" -> "सावधान: इस कॉल में चेतावनी के संकेत हैं"
+        else -> "Careful: this call has warning signs"
     }
 
     fun watchBody(lang: String) = when (lang) {
@@ -135,6 +137,16 @@ object Copy {
             "hi" -> "इस कॉल के दौरान स्क्रीन शेयर ऐप खोला गया"
             else -> "A screen-sharing app was opened during this call"
         }
+        key == "international" -> when (lang) {
+            "kn" -> "ವಿದೇಶಿ ಸಂಖ್ಯೆಯಿಂದ ಕರೆ. ಭಾರತದ ಯಾವುದೇ ಸಂಸ್ಥೆ ವಿದೇಶದಿಂದ ಕರೆ ಮಾಡುವುದಿಲ್ಲ"
+            "hi" -> "विदेशी नंबर से कॉल। कोई भी भारतीय एजेंसी विदेश से कॉल नहीं करती"
+            else -> "Call from a foreign number. No Indian agency calls from abroad"
+        }
+        key == "install" -> when (lang) {
+            "kn" -> "ಈ ಕರೆಯ ಸಮಯದಲ್ಲಿ ಒಂದು ಆ್ಯಪ್ ಇನ್‌ಸ್ಟಾಲ್ ಮಾಡಲಾಗುತ್ತಿತ್ತು"
+            "hi" -> "इस कॉल के दौरान एक ऐप इंस्टॉल किया जा रहा था"
+            else -> "An app was being installed during this call"
+        }
         key == "notice" -> when (lang) {
             "kn" -> "ನೀವು ಸ್ಕ್ಯಾನ್ ಮಾಡಿದ ನೋಟಿಸ್ ನಕಲಿಯಂತೆ ಕಾಣುತ್ತದೆ"
             "hi" -> "आपने जो नोटिस स्कैन किया वह नकली लगता है"
@@ -175,6 +187,16 @@ object Copy {
             "hi" -> "ऐप उपयोग एक्सेस"
             else -> "App usage access"
         }
+        key == "international" -> when (lang) {
+            "kn" -> "ಕರೆ ಮಾಡಿದ ಸಂಖ್ಯೆಯ ದೇಶದ ಕೋಡ್"
+            "hi" -> "कॉल करने वाले नंबर का देश कोड"
+            else -> "Caller's country code"
+        }
+        key == "install" -> when (lang) {
+            "kn" -> "ಆ್ಯಪ್ ಬಳಕೆಯ ಅನುಮತಿ"
+            "hi" -> "ऐप उपयोग एक्सेस"
+            else -> "App usage access"
+        }
         key == "notice" -> when (lang) {
             "kn" -> "ನೋಟಿಸ್ ಸ್ಕ್ಯಾನರ್ (OCR)"
             "hi" -> "नोटिस स्कैनर (OCR)"
@@ -195,6 +217,48 @@ object Copy {
             "कृपया उन्हें अभी कॉल करें।"
         else -> "KAAVALU ALERT: $name may be on a scam call right now. $why. " +
             "Risk $score/100. Please call them now."
+    }
+
+    /**
+     * What happened to the family alert, for the warning screen. "Sent", never "delivered":
+     * the phone only knows the network took it. [status] is a Delivery name.
+     */
+    fun guardianStatus(lang: String, status: String): String = when (status) {
+        "SENDING" -> when (lang) {
+            "kn" -> "ನಿಮ್ಮ ಕುಟುಂಬಕ್ಕೆ ಸಂದೇಶ ಕಳುಹಿಸಲಾಗುತ್ತಿದೆ…"
+            "hi" -> "आपके परिवार को संदेश भेजा जा रहा है…"
+            else -> "Texting your family…"
+        }
+        "SENT" -> when (lang) {
+            "kn" -> "ನಿಮ್ಮ ಕುಟುಂಬಕ್ಕೆ ಸಂದೇಶ ಕಳುಹಿಸಲಾಗಿದೆ."
+            "hi" -> "आपके परिवार को संदेश भेज दिया गया है।"
+            else -> "Your family has been sent a message."
+        }
+        "FAILED", "NO_PERMISSION" -> when (lang) {
+            "kn" -> "ಕುಟುಂಬಕ್ಕೆ ಸಂದೇಶ ಹೋಗಲಿಲ್ಲ. ಈಗಲೇ ಅವರಿಗೆ ಕರೆ ಮಾಡಿ."
+            "hi" -> "परिवार को संदेश नहीं जा सका। अभी उन्हें कॉल कीजिए।"
+            else -> "Couldn’t text your family. Call them now."
+        }
+        else -> ""
+    }
+
+    /** To the family member, when protection on the parent's phone is off. */
+    fun healthSms(lang: String, name: String): String = when (lang) {
+        "kn" -> "ಕಾವಲು: $name ಅವರ ಫೋನ್‌ನಲ್ಲಿ ರಕ್ಷಣೆ ಆಫ್ ಆಗಿದೆ. ದಯವಿಟ್ಟು ಆ ಫೋನ್‌ನಲ್ಲಿ ಕಾವಲು ತೆರೆದು ಸೆಟಪ್ ಒತ್ತಿ."
+        "hi" -> "कावलु: $name के फ़ोन पर सुरक्षा बंद है। कृपया उस फ़ोन पर कावलु खोलकर सेटअप दबाइए।"
+        else -> "KAAVALU: protection on $name's phone is off. Please open Kaavalu on that phone and tap Setup."
+    }
+
+    fun healthTitle(lang: String) = when (lang) {
+        "kn" -> "ಕಾವಲು ಈಗ ಕರೆಗಳನ್ನು ಗಮನಿಸುತ್ತಿಲ್ಲ"
+        "hi" -> "कावलु अभी कॉल पर नज़र नहीं रख रहा"
+        else -> "Kaavalu is not watching calls"
+    }
+
+    fun healthBody(lang: String) = when (lang) {
+        "kn" -> "ಫೋನ್ ಒಂದು ಅನುಮತಿಯನ್ನು ಆಫ್ ಮಾಡಿದೆ. ಸರಿಪಡಿಸಲು ಒತ್ತಿ, ಅಥವಾ ಕುಟುಂಬದವರನ್ನು ಕೇಳಿ."
+        "hi" -> "फ़ोन ने एक अनुमति बंद कर दी है। ठीक करने के लिए दबाइए, या परिवार से पूछिए।"
+        else -> "The phone switched off a permission it needs. Tap to fix it, or ask your family."
     }
 
     fun guardianTestSms(lang: String, name: String): String = when (lang) {
@@ -250,6 +314,33 @@ object Copy {
         "kn" -> "ಇದು ಪ್ರಸಿದ್ಧ ವಂಚನೆ. ಯಾವ ಸಂಸ್ಥೆಯೂ ಕರೆಯಲ್ಲಿ ಬಂಧಿಸುವುದಿಲ್ಲ. ಹಣ ಕಳುಹಿಸಬೇಡಿ. ಕುಟುಂಬಕ್ಕೆ ಅಥವಾ 1930 ಗೆ ಕರೆ ಮಾಡಿ."
         "hi" -> "यह एक जानी-पहचानी ठगी है। कोई एजेंसी कॉल पर गिरफ़्तार नहीं करती। पैसे मत भेजिए। परिवार को या 1930 पर कॉल कीजिए।"
         else -> "This is a known scam. No agency arrests anyone over a call. Do not send money. Call your family or 1930."
+    }
+
+    /**
+     * The spoken answer, matched to the scam. The digital arrest answer talks about agencies
+     * and arrests; said to someone describing a job offer or blackmail it is simply wrong,
+     * and a wrong sentence is how the right advice after it gets ignored.
+     *
+     * [kind] is a [com.dasen.kaavalu.scan.ScamKind] name.
+     */
+    fun askAnswer(lang: String, scam: Boolean, kind: String): String = when {
+        !scam -> askSafeAnswer(lang)
+        kind == "DIGITAL_ARREST" || kind == "COURIER" -> askScamAnswer(lang)
+        kind == "SEXTORTION" -> when (lang) {
+            "kn" -> "ಇದು ಬ್ಲ್ಯಾಕ್‌ಮೇಲ್, ಗೊತ್ತಿರುವ ವಂಚನೆ. ಹಣ ಕೊಡಬೇಡಿ: ಹಣ ಕೊಟ್ಟರೂ ಇದು ನಿಲ್ಲುವುದಿಲ್ಲ. 1930 ಗೆ ಅಥವಾ ನಂಬಿಕೆಯ ವ್ಯಕ್ತಿಗೆ ಕರೆ ಮಾಡಿ."
+            "hi" -> "यह ब्लैकमेल है, एक जानी-पहचानी ठगी। पैसे मत दीजिए: पैसे देने से यह कभी नहीं रुकता। 1930 पर या किसी भरोसेमंद व्यक्ति को कॉल कीजिए।"
+            else -> "This is blackmail, and a known scam. Do not pay: paying never makes it stop. Call 1930 or someone you trust."
+        }
+        kind == "FAMILY_EMERGENCY" -> when (lang) {
+            "kn" -> "ಇದು ಗೊತ್ತಿರುವ ವಂಚನೆಗೆ ಹೊಂದುತ್ತದೆ. ಮೊದಲು ಆ ಕುಟುಂಬದವರಿಗೆ ಅವರದೇ ಸಂಖ್ಯೆಗೆ ನೀವೇ ಕರೆ ಮಾಡಿ. ಬೇರೆ ಯಾರಿಗೂ ಹಣ ಕಳುಹಿಸಬೇಡಿ."
+            "hi" -> "यह एक जानी-पहचानी ठगी से मिलता है। सबसे पहले उस परिवार वाले को उनके अपने नंबर पर खुद कॉल कीजिए। किसी और को पैसे मत भेजिए।"
+            else -> "This matches a known scam. Before anything else, call that family member yourself on their own number. Do not send money to anyone else."
+        }
+        else -> when (lang) {
+            "kn" -> "ಇದು ಗೊತ್ತಿರುವ ವಂಚನೆಗೆ ಹೊಂದುತ್ತದೆ. ಹಣ ಕಳುಹಿಸಬೇಡಿ, ಯಾವುದೇ ಕೋಡ್ ಹೇಳಬೇಡಿ, ಅವರು ಹೇಳಿದ ಏನನ್ನೂ ಇನ್‌ಸ್ಟಾಲ್ ಮಾಡಬೇಡಿ. ಕುಟುಂಬಕ್ಕೆ ಅಥವಾ 1930 ಗೆ ಕರೆ ಮಾಡಿ."
+            "hi" -> "यह एक जानी-पहचानी ठगी से मिलता है। पैसे मत भेजिए, कोई कोड मत बताइए, और उनके कहने पर कुछ भी इंस्टॉल मत कीजिए। परिवार को या 1930 पर कॉल कीजिए।"
+            else -> "This matches a known scam. Do not send money, do not share any code, and do not install anything they ask. Call your family or 1930."
+        }
     }
 
     fun askSafeAnswer(lang: String) = when (lang) {

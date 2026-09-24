@@ -44,6 +44,11 @@ import androidx.compose.ui.unit.dp
 import com.dasen.kaavalu.Copy
 import com.dasen.kaavalu.Prefs
 import com.dasen.kaavalu.R
+import com.dasen.kaavalu.respond.Delivery
+import com.dasen.kaavalu.respond.Guardian
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.liveRegion
 
 /**
  * Setup is done once, by the son or daughter, on the phone of the person being protected.
@@ -275,6 +280,7 @@ private fun SetupChecklist(onOpenDemo: () -> Unit) {
                         if (guardian == null) "Add a family number" else "Change family number",
                         style = ActionStyle.Secondary,
                     ) { editing = true }
+                    if (guardian != null) TestAlert(guardian)
                 }
             }
         }
@@ -326,6 +332,27 @@ private fun SetupChecklist(onOpenDemo: () -> Unit) {
         }
 
         ActionStrip {
+            // Android removes the permissions of apps nobody opens for a few months. The
+            // parent never opens this one — that is the point of it — so without this
+            // exemption, protection quietly switches itself off one day.
+            if (!remember(refresh) { ctx.packageManager.isAutoRevokeWhitelisted }) {
+                ActionRow(
+                    icon = R.drawable.ic_shield_k,
+                    verb = "Keep these permissions",
+                    detail = "Stop Android removing them because the app is rarely opened. Turn off “Pause app activity if unused”.",
+                    tone = Tone.Checking,
+                ) {
+                    runCatching {
+                        settingsLauncher.launch(
+                            android.content.Intent(
+                                android.content.Intent.ACTION_AUTO_REVOKE_PERMISSIONS,
+                                android.net.Uri.fromParts("package", ctx.packageName, null),
+                            ),
+                        )
+                    }
+                }
+                HRule(Modifier.padding(start = 64.dp))
+            }
             Permissions.autostartIntent()?.let { intent ->
                 ActionRow(
                     icon = R.drawable.ic_nav_setup,
@@ -347,6 +374,38 @@ private fun SetupChecklist(onOpenDemo: () -> Unit) {
             if (trusted == 1) "1 number is marked as someone you know." else "$trusted numbers are marked as people you know.",
             style = KType.utility,
             color = Muted,
+        )
+    }
+}
+
+/**
+ * A test of the one message that has to work. The family member sets this up, presses it,
+ * and sees their own phone light up: that is the moment the app earns trust. The result is
+ * reported honestly — "sent" means the network took it, never that it was read.
+ */
+@Composable
+private fun TestAlert(guardian: String) {
+    val ctx = LocalContext.current
+    val status by Guardian.testStatus.collectAsStateWithLifecycle()
+    BigAction(
+        if (status == Delivery.SENDING) "Sending a test alert…" else "Send a test alert",
+        style = ActionStyle.Ghost,
+        icon = R.drawable.ic_family,
+        enabled = status != Delivery.SENDING,
+        textStyle = MaterialTheme.typography.titleMedium,
+    ) { Guardian.sendTest(ctx) }
+    val (line, colour) = when (status) {
+        Delivery.SENT -> "Test sent to $guardian. Check that it arrived." to Guard500
+        Delivery.FAILED -> "The test didn’t send. Check the SIM has balance and signal, then try again." to Caution900
+        Delivery.NO_PERMISSION -> "SMS permission is off. Turn on “Phone, contacts, SMS and notifications” below." to Caution900
+        else -> null to Muted
+    }
+    line?.let {
+        Text(
+            it,
+            style = MaterialTheme.typography.bodyMedium,
+            color = colour,
+            modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
         )
     }
 }

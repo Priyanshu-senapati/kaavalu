@@ -66,11 +66,15 @@ fun DemoConsole(engine: RiskEngine, onBack: () -> Unit) {
                     s.tier.name.lowercase(),
                     container = tone.solid(),
                     content = tone.onSolid(),
-                    live = s.sessionActive,
+                    live = s.onCall,
                 )
                 Spacer(Modifier.width(Space.sm))
                 Text(
-                    if (s.sessionActive) "Call in progress" else "No call",
+                    when {
+                        s.onCall -> "Call in progress"
+                        s.sessionActive -> "Call ended, still watching"
+                        else -> "No call"
+                    },
                     style = MaterialTheme.typography.titleSmall,
                     color = Muted,
                 )
@@ -143,6 +147,23 @@ fun DemoConsole(engine: RiskEngine, onBack: () -> Unit) {
                             isKnown = false,
                             unverified = true,
                         ),
+                    )
+                }
+                Divider()
+                Inject("Unknown call from abroad", "WhatsApp video from a +855 number", "+60") {
+                    SignalBus.emit(
+                        Signal.CallStarted(
+                            number = "+855 12 345 678",
+                            channel = Channel.WHATSAPP,
+                            isKnown = false,
+                            isVideo = true,
+                        ),
+                    )
+                }
+                Divider()
+                Inject("Open the app installer", "An APK being installed during the call", "+25") {
+                    SignalBus.emit(
+                        Signal.SensitiveAppOpened("com.google.android.packageinstaller", AppKind.INSTALLER),
                     )
                 }
                 Divider()

@@ -15,6 +15,7 @@ object Notifications {
     private const val WARN = "warnings"
     const val GUARD_ID = 1
     private const val WARN_ID = 2
+    private const val GUARDIAN_FAILED_ID = 3
 
     fun createChannels(c: Context) {
         val nm = c.getSystemService(NotificationManager::class.java)
@@ -77,6 +78,32 @@ object Notifications {
                 .setVibrate(longArrayOf(0, 600, 300, 600, 300, 600))
                 .setFullScreenIntent(pi, true)
                 .setContentIntent(pi)
+        )
+    }
+
+    /**
+     * The family alert did not go out. Tapping it dials the family directly: when the text
+     * failed, the call is the only way left, and it should be one tap away.
+     */
+    fun guardianFailed(c: Context) {
+        val lang = Prefs.language(c)
+        val number = Prefs.guardian(c)
+        val tap = number?.let {
+            PendingIntent.getActivity(
+                c, 3,
+                Intent(Intent.ACTION_DIAL, android.net.Uri.parse("tel:$it")).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+            )
+        } ?: openApp(c)
+        c.getSystemService(NotificationManager::class.java).notify(
+            GUARDIAN_FAILED_ID,
+            NotificationCompat.Builder(c, WARN)
+                .setSmallIcon(R.drawable.ic_shield)
+                .setContentTitle(Copy.guardianStatus(lang, "FAILED"))
+                .setContentIntent(tap)
+                .setAutoCancel(true)
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .build(),
         )
     }
 

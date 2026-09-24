@@ -46,6 +46,13 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.platform.LocalFocusManager
+import kotlinx.coroutines.delay
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateListOf
@@ -129,10 +136,7 @@ fun AskScreen(onBack: () -> Unit) {
         thinking = false
         val scored = NoticeMarkers.evaluateSpoken(text)
         result = scored
-        val reply = when (scored.verdict) {
-            Verdict.SCAM, Verdict.SUSPICIOUS -> Copy.askScamAnswer(lang)
-            else -> Copy.askSafeAnswer(lang)
-        }
+        val reply = Copy.askAnswer(lang, scored.flagged, scored.kind.name)
         speaker.say(reply, lang)
     }
 
@@ -305,7 +309,23 @@ fun AskScreen(onBack: () -> Unit) {
             }
         }
 
-        result?.let { r -> VerdictReveal { AnswerSheet(r, lang, ctx, speaker) } }
+        // The answer is the point: when it arrives the keyboard goes away and the page moves
+        // to it. Otherwise a typed question is answered behind the keyboard, out of sight.
+        val answerInView = remember { BringIntoViewRequester() }
+        val focusManager = LocalFocusManager.current
+        val answerSettle = motion(Motion.STANDARD).toLong()
+        LaunchedEffect(result) {
+            if (result != null) {
+                focusManager.clearFocus()
+                delay(answerSettle + 200)
+                runCatching { answerInView.bringIntoView() }
+            }
+        }
+        result?.let { r ->
+            Column(Modifier.bringIntoViewRequester(answerInView)) {
+                VerdictReveal { AnswerSheet(r, lang, ctx, speaker) }
+            }
+        }
 
         // The keyboard is never the point, but it is always there: a demo that depends on a
         // microphone in a loud hall is a demo that fails in front of the jury.
@@ -316,12 +336,28 @@ fun AskScreen(onBack: () -> Unit) {
             textStyle = MaterialTheme.typography.titleMedium,
         ) { typing = !typing }
 
+        // Opening the box used to leave it below the edge of the screen, so on a phone with
+        // large text "Type it instead" looked like it did nothing. Now it scrolls into view
+        // and takes the cursor, and the keyboard comes up with it.
+        val bringIntoView = remember { BringIntoViewRequester() }
+        val focus = remember { FocusRequester() }
+        val settle = motion(Motion.STANDARD).toLong()
+        LaunchedEffect(typing) {
+            if (typing) {
+                delay(settle + 60)
+                runCatching { bringIntoView.bringIntoView() }
+                runCatching { focus.requestFocus() }
+            }
+        }
         AnimatedVisibility(
             visible = typing,
             enter = fadeIn(tween(motion(Motion.QUICK))) + expandVertically(tween(motion(Motion.STANDARD), easing = Motion.enter)),
             exit = fadeOut(tween(motion(Motion.QUICK))) + shrinkVertically(tween(motion(Motion.QUICK))),
         ) {
-            Column(verticalArrangement = Arrangement.spacedBy(Space.sm)) {
+            Column(
+                Modifier.bringIntoViewRequester(bringIntoView),
+                verticalArrangement = Arrangement.spacedBy(Space.sm),
+            ) {
                 Well(padding = Space.lg) {
                     Text("What did they say?", style = MaterialTheme.typography.titleSmall, color = Ink2)
                     BasicTextField(
@@ -333,6 +369,7 @@ fun AskScreen(onBack: () -> Unit) {
                         modifier = Modifier
                             .fillMaxWidth()
                             .heightIn(min = Touch.critical)
+                            .focusRequester(focus)
                             .semantics { contentDescription = "What did they say?" },
                     )
                 }
@@ -550,7 +587,7 @@ private fun AnswerSheet(
         Verdict.SUSPICIOUS -> Tone.Checking
         else -> Tone.Neutral
     }
-    val reply = if (scam) Copy.askScamAnswer(lang) else Copy.askSafeAnswer(lang)
+    val reply = Copy.askAnswer(lang, scam, r.kind.name)
     val lines = remember(r) { scanLines(r, "What you said") }
     val stage = rememberStage(r, verdictSchedule(tallyRows(lines.size)))
     val revealed = (stage - 2).coerceAtLeast(0)
@@ -564,8 +601,8 @@ private fun AnswerSheet(
                     else -> "No scam signs"
                 },
                 headline = when (r.verdict) {
-                    Verdict.SCAM -> "This is the digital arrest scam"
-                    Verdict.SUSPICIOUS -> "This sounds like the scam"
+                    Verdict.SCAM -> "This is ${r.kind.title}"
+                    Verdict.SUSPICIOUS -> "This sounds like ${r.kind.title}"
                     else -> "No scam signs heard"
                 },
                 tone = tone,
