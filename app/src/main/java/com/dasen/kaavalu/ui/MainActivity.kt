@@ -5,45 +5,70 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material3.Icon
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.NavigationBarItemDefaults
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.dasen.kaavalu.KaavaluApp
 import com.dasen.kaavalu.Prefs
 import com.dasen.kaavalu.R
 
 /**
- * The five places in the app. Before this existed every screen was a dead end with one
- * "Back" button at the bottom of a long scroll, which is the fastest way to make someone
- * decide an app is not for them.
+ * The places in the app. Four are destinations in the bar. The demo console is a room off
+ * Setup: it is for the family member rehearsing the warning, not for the person it protects,
+ * so it does not get a door on every screen.
  */
-enum class Screen(val label: String, val icon: Int) {
+enum class Screen(val label: String, val icon: Int, val inBar: Boolean = true) {
     HOME("Home", R.drawable.ic_nav_home),
-    SCAN("Check notice", R.drawable.ic_nav_scan),
+    SCAN("Check", R.drawable.ic_nav_scan),
     ASK("Ask", R.drawable.ic_nav_ask),
     SETUP("Setup", R.drawable.ic_nav_setup),
-    DEMO("Demo", R.drawable.ic_nav_demo),
+    DEMO("Demo", R.drawable.ic_nav_demo, inBar = false),
 }
+
+private val Tabs = Screen.entries.filter { it.inBar }
+
+/** Which tab is lit for [screen]. The demo console lives under Setup. */
+private fun tabOf(screen: Screen) = if (screen == Screen.DEMO) Screen.SETUP else screen
 
 class MainActivity : ComponentActivity() {
 
@@ -57,39 +82,56 @@ class MainActivity : ComponentActivity() {
         setContent {
             KaavaluTheme {
                 var onboarded by remember { mutableStateOf(Prefs.onboardingDone(this)) }
-                var screen by remember { mutableStateOf(Screen.HOME) }
+                // Saveable: rotating the phone used to drop the user back on Home, which on a
+                // half-finished scan reads as the app having crashed.
+                var screen by rememberSaveable { mutableStateOf(Screen.HOME) }
 
                 if (!onboarded) {
                     // First run is a ladder, not a tab bar: the nav would only offer ways to
                     // leave before protection is actually on.
-                    Onboarding(firstRun = true) {
-                        Prefs.setOnboardingDone(this, true)
-                        KaavaluApp.startGuarding(this)
-                        onboarded = true
-                        screen = Screen.HOME
+                    Box(Modifier.fillMaxSize().background(Paper).statusBarsPadding().navigationBarsPadding()) {
+                        Onboarding(firstRun = true) {
+                            Prefs.setOnboardingDone(this@MainActivity, true)
+                            KaavaluApp.startGuarding(this@MainActivity)
+                            onboarded = true
+                            screen = Screen.HOME
+                        }
                     }
                     return@KaavaluTheme
                 }
 
-                BackHandler(enabled = screen != Screen.HOME) { screen = Screen.HOME }
+                BackHandler(enabled = screen != Screen.HOME) {
+                    screen = if (screen == Screen.DEMO) Screen.SETUP else Screen.HOME
+                }
 
-                Scaffold(
-                    containerColor = Paper,
-                    bottomBar = { KaavaluNavBar(screen) { screen = it } },
-                ) { insets ->
+                Column(Modifier.fillMaxSize().background(Paper)) {
                     Box(
                         Modifier
-                            .fillMaxSize()
-                            .background(Paper)
-                            .padding(
-                                top = insets.calculateTopPadding(),
-                                bottom = insets.calculateBottomPadding(),
-                            ),
+                            .weight(1f)
+                            .fillMaxWidth()
+                            .statusBarsPadding(),
                     ) {
+                        // transitionSpec is not a composable scope, so the durations are
+                        // resolved out here where the reduced-motion setting can be read.
+                        val fadeMs = motion(Motion.STANDARD)
+                        val riseMs = motion(Motion.EMPHASIZED)
+                        val outMs = motion(Motion.QUICK)
                         AnimatedContent(
                             targetState = screen,
                             transitionSpec = {
-                                fadeIn(tween(180)) togetherWith fadeOut(tween(120))
+                                // Directional, because the tabs are laid out left to right and
+                                // the motion should agree with the bar. A twelfth of the width:
+                                // enough to say which way you moved, not so much that switching
+                                // tabs becomes a journey.
+                                val forward = targetState.ordinal > initialState.ordinal
+                                val dir = if (forward) 1 else -1
+                                (
+                                    fadeIn(tween(fadeMs)) +
+                                        slideInHorizontally(tween(riseMs, easing = Motion.enter)) { dir * it / 12 }
+                                    ).togetherWith(
+                                    fadeOut(tween(outMs)) +
+                                        slideOutHorizontally(tween(outMs, easing = Motion.exit)) { -dir * it / 24 },
+                                )
                             },
                             label = "screen",
                         ) { current ->
@@ -97,40 +139,89 @@ class MainActivity : ComponentActivity() {
                                 Screen.HOME -> Home(engine) { screen = it }
                                 Screen.SCAN -> ScanScreen { screen = Screen.HOME }
                                 Screen.ASK -> AskScreen { screen = Screen.HOME }
-                                Screen.SETUP -> Onboarding(firstRun = false) { screen = Screen.HOME }
-                                Screen.DEMO -> DemoConsole(engine) { screen = Screen.HOME }
+                                Screen.SETUP -> Onboarding(
+                                    firstRun = false,
+                                    onOpenDemo = { screen = Screen.DEMO },
+                                ) { screen = Screen.HOME }
+                                Screen.DEMO -> DemoConsole(engine) { screen = Screen.SETUP }
                             }
                         }
                     }
+                    KaavaluNavBar(tabOf(screen)) { screen = it }
                 }
             }
         }
     }
 }
 
+/**
+ * Four destinations, one signal. The lit tab carries a bar along its top edge that slides
+ * to the next tab when you move, so the eye follows the change rather than hunting for it.
+ * Labels are always shown, and each target is the full width of its column.
+ */
 @Composable
 private fun KaavaluNavBar(current: Screen, onSelect: (Screen) -> Unit) {
-    NavigationBar(containerColor = Color.White, tonalElevation = 0.dp) {
-        Screen.entries.forEach { screen ->
-            NavigationBarItem(
-                selected = current == screen,
-                onClick = { onSelect(screen) },
-                icon = {
-                    Icon(
-                        painterResource(screen.icon),
-                        contentDescription = screen.label,
-                        modifier = Modifier.padding(2.dp),
+    val index = Tabs.indexOf(current).coerceAtLeast(0)
+    val at by animateFloatAsState(index.toFloat(), kSpring(), label = "navSignal")
+    Column(
+        Modifier
+            .fillMaxWidth()
+            .background(Sheet)
+            .navigationBarsPadding(),
+    ) {
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .drawBehind {
+                    drawRect(Line, size = Size(size.width, 1.dp.toPx()))
+                    val slot = size.width / Tabs.size
+                    val w = slot * 0.44f
+                    drawRect(
+                        Guard,
+                        topLeft = Offset(slot * at + (slot - w) / 2f, 0f),
+                        size = Size(w, Stroke.signal.toPx()),
                     )
                 },
-                label = { Text(screen.label, maxLines = 1) },
-                colors = NavigationBarItemDefaults.colors(
-                    selectedIconColor = Color.White,
-                    selectedTextColor = Guard,
-                    indicatorColor = Guard,
-                    unselectedIconColor = Muted,
-                    unselectedTextColor = Muted,
-                ),
-            )
+            horizontalArrangement = Arrangement.SpaceEvenly,
+        ) {
+            Tabs.forEach { tab ->
+                NavItem(tab, selected = tab == current, modifier = Modifier.weight(1f)) { onSelect(tab) }
+            }
         }
+    }
+}
+
+@Composable
+private fun NavItem(tab: Screen, selected: Boolean, modifier: Modifier, onClick: () -> Unit) {
+    val source = remember { MutableInteractionSource() }
+    val scale = pressScale(source, depth = 0.92f)
+    val ink by animateColorAsState(
+        if (selected) Guard else Muted,
+        tween(motion(Motion.STANDARD)),
+        label = "navInk",
+    )
+    Column(
+        modifier
+            .heightIn(min = 68.dp)
+            .semantics { this.selected = selected }
+            .clickable(interactionSource = source, indication = null, role = Role.Tab, onClick = onClick),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+    ) {
+        Spacer(Modifier.height(Space.sm))
+        Icon(
+            painterResource(tab.icon),
+            contentDescription = null,
+            tint = ink,
+            modifier = Modifier.size(26.dp).graphicsLayer { scaleX = scale; scaleY = scale },
+        )
+        Spacer(Modifier.height(Space.xxs))
+        Text(
+            tab.label,
+            style = KType.utility.copy(fontWeight = if (selected) FontWeight(640) else FontWeight(500)),
+            color = if (selected) Ink else Muted,
+            maxLines = 1,
+        )
+        Spacer(Modifier.height(Space.sm))
     }
 }

@@ -77,6 +77,20 @@ object Copy {
         else -> "Risk $score/100. Why you are seeing this:"
     }
 
+    /** The caption under the total at the foot of the evidence tally. */
+    fun evidenceTotal(lang: String) = when (lang) {
+        "kn" -> "ಸಾಕ್ಷ್ಯದ ಅಂಕಗಳು"
+        "hi" -> "सबूत के अंक"
+        else -> "points of evidence"
+    }
+
+    /** The tally line that explains why the total stops short of the sum above it. */
+    fun capped(lang: String) = when (lang) {
+        "kn" -> "ಕಾವಲು ಅಳತೆ 100 ರಲ್ಲಿ ನಿಲ್ಲುತ್ತದೆ"
+        "hi" -> "कावलु का पैमाना 100 पर रुकता है"
+        else -> "Kaavalu’s scale stops at 100"
+    }
+
     /**
      * The breakdown lines on the warning screen, by signal key. This is the panel the jury
      * reads when you say "this is how the phone knows", so it has to be in the same

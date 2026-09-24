@@ -81,12 +81,22 @@ enum class Verdict {
     UNREADABLE,
 }
 
+/**
+ * One matched marker, with the points it carried. [found] keeps the plain sentences for
+ * everything that already reads them; this is what lets a verdict show its arithmetic.
+ */
+data class Evidence(val why: String, val points: Int, val cue: Cue)
+
 data class ScanResult(
     val score: Int,
     val found: List<String>,
     val text: String,
     val verdict: Verdict,
     val cues: Set<Cue> = emptySet(),
+    /** The same hits as [found], strongest first, with their weights. */
+    val evidence: List<Evidence> = emptyList(),
+    /** Points added because several core pressures appeared together. */
+    val comboBonus: Int = 0,
 ) {
     /** Whether this is worth putting on the risk engine's bus. */
     val flagged: Boolean get() = verdict == Verdict.SCAM || verdict == Verdict.SUSPICIOUS
@@ -175,7 +185,8 @@ object NoticeMarkers {
 
         val cues = hits.map { it.cue }.toSet()
         val base = hits.sumOf { it.weight }
-        val total = (base + comboBonus(cues)).coerceAtMost(100)
+        val bonus = comboBonus(cues)
+        val total = (base + bonus).coerceAtMost(100)
 
         val scamAt = if (spoken) SPOKEN_SCAM_AT else NOTICE_SCAM_AT
         val suspiciousAt = if (spoken) SPOKEN_SUSPICIOUS_AT else NOTICE_SUSPICIOUS_AT
@@ -185,13 +196,16 @@ object NoticeMarkers {
             else -> Verdict.UNCLEAR
         }
 
+        // Strongest reason first: the user reads two lines, not nine.
+        val ranked = hits.sortedByDescending { it.weight }
         return ScanResult(
             score = total,
-            // Strongest reason first: the user reads two lines, not nine.
-            found = hits.sortedByDescending { it.weight }.map { it.why },
+            found = ranked.map { it.why },
             text = raw,
             verdict = verdict,
             cues = cues,
+            evidence = ranked.map { Evidence(it.why, it.weight, it.cue) },
+            comboBonus = bonus,
         )
     }
 
@@ -217,10 +231,10 @@ object NoticeMarkers {
         .replace(Regex("""[^\p{L}\p{N}'ऀ-ॿಀ-೿]+"""), " ")
         .trim()
 
-    private const val NOTICE_SCAM_AT = 55
-    private const val NOTICE_SUSPICIOUS_AT = 28
-    private const val SPOKEN_SCAM_AT = 45
-    private const val SPOKEN_SUSPICIOUS_AT = 22
+    const val NOTICE_SCAM_AT = 55
+    const val NOTICE_SUSPICIOUS_AT = 28
+    const val SPOKEN_SCAM_AT = 45
+    const val SPOKEN_SUSPICIOUS_AT = 22
 
     private fun r(p: String) = Regex(p, RegexOption.IGNORE_CASE)
 
