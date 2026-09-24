@@ -13,6 +13,8 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -35,6 +37,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -110,7 +113,44 @@ fun AskScreen(modifier: Modifier = Modifier) {
         speaker.say(reply, lang)
     }
 
-    fun listen() {
+    // Declared after respondTo so it can call it directly: a local function has to exist
+    // before it is referenced.
+    val voiceDialog = rememberLauncherForActivityResult(
+        ActivityResultContracts.StartActivityForResult(),
+    ) { result ->
+        val text = result.data
+            ?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
+            ?.firstOrNull()
+        Log.d(TAG, "voice dialog returned: $text")
+        if (!text.isNullOrBlank()) respondTo(text) else error = "Nothing was heard."
+    }
+
+    /**
+     * [explicitLanguage] false lets the recogniser use whatever the phone is already set
+     * up for. Asking for "en-IN" specifically fails outright when only the generic English
+     * pack is installed, which is a silly reason to lose the feature.
+     */
+    fun recogniserIntent(preferOffline: Boolean, explicitLanguage: Boolean = true) =
+        Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+            putExtra(
+                RecognizerIntent.EXTRA_LANGUAGE_MODEL,
+                RecognizerIntent.LANGUAGE_MODEL_FREE_FORM,
+            )
+            if (explicitLanguage) {
+                putExtra(RecognizerIntent.EXTRA_LANGUAGE, "$lang-IN")
+                putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, "$lang-IN")
+            }
+            putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 3)
+            if (preferOffline) putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, true)
+        }
+
+    /**
+     * Offline first, because protection must not depend on a connection. But offline
+     * recognition needs a language pack the phone may simply not have, and it fails with
+     * a code rather than falling back on its own, so the second attempt drops the offline
+     * preference before giving up.
+     */
+    fun listen(preferOffline: Boolean = true) {
         val r = recognizer
         if (r == null) {
             error = "This phone has no speech recognition installed."
@@ -132,15 +172,17 @@ fun AskScreen(modifier: Modifier = Modifier) {
 
             override fun onError(code: Int) {
                 listening = false
-                error = when (code) {
-                    SpeechRecognizer.ERROR_NO_MATCH ->
-                        "I did not catch that. Please say it again."
-                    SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS ->
-                        "Microphone permission is needed."
-                    SpeechRecognizer.ERROR_NETWORK, SpeechRecognizer.ERROR_NETWORK_TIMEOUT ->
-                        "Speech needs the offline language pack or a connection."
-                    else -> "Speech recognition failed. Please try again."
+                Log.w(TAG, "recogniser error $code (${describe(code)}), offline=$preferOffline")
+
+                // The offline pack is missing or unusable: try again over the network
+                // before telling the user anything.
+                val retryOnline = preferOffline && code in RETRYABLE
+                if (retryOnline) {
+                    Log.d(TAG, "retrying without EXTRA_PREFER_OFFLINE")
+                    listen(preferOffline = false)
+                    return
                 }
+                error = "${describe(code)} (code $code)"
             }
 
             override fun onResults(results: Bundle?) {
@@ -155,17 +197,12 @@ fun AskScreen(modifier: Modifier = Modifier) {
                 }
             }
         })
-        val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
-            putExtra(
-                RecognizerIntent.EXTRA_LANGUAGE_MODEL,
-                RecognizerIntent.LANGUAGE_MODEL_FREE_FORM,
-            )
-            putExtra(RecognizerIntent.EXTRA_LANGUAGE, "$lang-IN")
-            putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, true)
-        }
+        // The retry also drops the explicit language, which is the other common cause.
+        val intent = recogniserIntent(preferOffline, explicitLanguage = preferOffline)
         runCatching { r.startListening(intent) }.onFailure {
             listening = false
-            error = "Could not start listening."
+            Log.e(TAG, "startListening threw: ${it.message}")
+            error = "Could not start listening: ${it.message}"
         }
     }
 
@@ -209,7 +246,31 @@ fun AskScreen(modifier: Modifier = Modifier) {
         }
 
         error?.let {
-            Text(it, color = Alarm, style = MaterialTheme.typography.bodyMedium)
+            Column(
+                Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Text(
+                    it,
+                    color = Alarm,
+                    style = MaterialTheme.typography.bodyMedium,
+                    textAlign = TextAlign.Center,
+                )
+                // Last resort: Google's own voice dialog. It uses a different path to the
+                // recogniser, so it often works when the in-app one will not.
+                OutlinedButton(
+                    onClick = {
+                        runCatching { voiceDialog.launch(recogniserIntent(preferOffline = false)) }
+                            .onFailure { e ->
+                                error = "No voice input app on this phone: ${e.message}"
+                            }
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = 52.dp),
+                ) { Text("Use Google voice input instead") }
+            }
         }
 
         answer?.let { text ->
@@ -328,3 +389,37 @@ private fun MicButton(listening: Boolean, onTap: () -> Unit) {
 }
 
 private const val TAG = "KaavaluAsk"
+
+/** Error codes worth a second attempt over the network before bothering the user. */
+private val RETRYABLE = setOf(
+    SpeechRecognizer.ERROR_NETWORK,
+    SpeechRecognizer.ERROR_NETWORK_TIMEOUT,
+    SpeechRecognizer.ERROR_SERVER,
+    SpeechRecognizer.ERROR_SERVER_DISCONNECTED,
+    SpeechRecognizer.ERROR_LANGUAGE_NOT_SUPPORTED,
+    SpeechRecognizer.ERROR_LANGUAGE_UNAVAILABLE,
+    SpeechRecognizer.ERROR_CANNOT_CHECK_SUPPORT,
+    SpeechRecognizer.ERROR_CLIENT,
+)
+
+/**
+ * Plain words for every code, because "Speech recognition failed" told the user nothing
+ * and told us nothing either. The code is shown alongside so a report is actionable.
+ */
+private fun describe(code: Int): String = when (code) {
+    SpeechRecognizer.ERROR_NETWORK_TIMEOUT -> "The speech service timed out"
+    SpeechRecognizer.ERROR_NETWORK -> "No connection, and no offline language pack"
+    SpeechRecognizer.ERROR_AUDIO -> "The microphone could not be read"
+    SpeechRecognizer.ERROR_SERVER -> "The speech service refused the request"
+    SpeechRecognizer.ERROR_CLIENT -> "The speech service is not set up on this phone"
+    SpeechRecognizer.ERROR_SPEECH_TIMEOUT -> "I did not hear anything. Tap and speak"
+    SpeechRecognizer.ERROR_NO_MATCH -> "I did not catch that. Please say it again"
+    SpeechRecognizer.ERROR_RECOGNIZER_BUSY -> "Still finishing the last one. Try again"
+    SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS -> "Microphone permission is needed"
+    SpeechRecognizer.ERROR_TOO_MANY_REQUESTS -> "Too many tries. Wait a moment"
+    SpeechRecognizer.ERROR_SERVER_DISCONNECTED -> "The speech service disconnected"
+    SpeechRecognizer.ERROR_LANGUAGE_NOT_SUPPORTED -> "This language is not supported here"
+    SpeechRecognizer.ERROR_LANGUAGE_UNAVAILABLE -> "The language pack is not downloaded"
+    SpeechRecognizer.ERROR_CANNOT_CHECK_SUPPORT -> "Could not check language support"
+    else -> "Speech recognition failed"
+}
