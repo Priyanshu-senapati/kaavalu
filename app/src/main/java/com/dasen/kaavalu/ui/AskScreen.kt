@@ -74,6 +74,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.dasen.kaavalu.Copy
 import com.dasen.kaavalu.Prefs
+import com.dasen.kaavalu.ScanCopy
 import com.dasen.kaavalu.R
 import com.dasen.kaavalu.respond.Speaker
 import com.dasen.kaavalu.scan.NoticeMarkers
@@ -551,7 +552,7 @@ private fun AnswerSheet(
         else -> Tone.Neutral
     }
     val reply = if (scam) Copy.askScamAnswer(lang) else Copy.askSafeAnswer(lang)
-    val lines = remember(r) { scanLines(r, "What you said") }
+    val lines = remember(r, lang) { scanLines(r, ScanCopy.whatYouSaid(lang), lang) }
     val stage = rememberStage(r, verdictSchedule(tallyRows(lines.size)))
     val revealed = (stage - 2).coerceAtLeast(0)
 

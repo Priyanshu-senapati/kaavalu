@@ -58,6 +58,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
 import com.dasen.kaavalu.Prefs
+import com.dasen.kaavalu.ScanCopy
 import com.dasen.kaavalu.R
 import com.dasen.kaavalu.scan.Cue
 import com.dasen.kaavalu.scan.NoticeMarkers
@@ -361,22 +362,30 @@ private fun CaptureActions(onPhotograph: () -> Unit, onPick: () -> Unit, retake:
     }
 }
 
-internal fun cueName(c: Cue) = when (c) {
-    Cue.AUTHORITY -> "Authority"
-    Cue.THREAT -> "Threat"
-    Cue.MONEY -> "Money"
-    Cue.SECRECY -> "Secrecy"
-    Cue.URGENCY -> "Urgency"
-    Cue.ISOLATION -> "Isolation"
-    Cue.IDENTITY -> "Identity"
-    Cue.STORY -> "Cover story"
-}
+internal fun cueName(c: Cue, lang: String = "en") = ScanCopy.cue(lang, c.name)
 
-/** A scan's evidence as tally lines, with the combination bonus as its own honest line. */
-internal fun scanLines(r: ScanResult, where: String): List<EvidenceLine> =
-    r.evidence.map { EvidenceLine(it.points, it.why, "$where · ${cueName(it.cue)}") } +
+/**
+ * A scan's evidence as tally lines, with the combination bonus as its own honest line.
+ *
+ * Read through ScanCopy by marker id, not straight off the marker's English text: the
+ * verdict used to answer in English on a phone whose every other screen was Kannada.
+ */
+internal fun scanLines(r: ScanResult, where: String, lang: String = "en"): List<EvidenceLine> =
+    r.evidence.map {
+        EvidenceLine(
+            it.points,
+            ScanCopy.markerReason(lang, it.id, it.why),
+            "$where · ${cueName(it.cue, lang)}",
+        )
+    } +
         if (r.comboBonus > 0) {
-            listOf(EvidenceLine(r.comboBonus, "Several pressures at once. Scams stack them; honest letters don’t.", "$where · Combination"))
+            listOf(
+                EvidenceLine(
+                    r.comboBonus,
+                    ScanCopy.combination(lang),
+                    "$where · " + ScanCopy.cue(lang, "COMBINATION"),
+                ),
+            )
         } else {
             emptyList()
         }
@@ -394,36 +403,36 @@ internal fun verdictSchedule(lines: Int): List<Long> = buildList {
  */
 @Composable
 private fun VerdictSheet(r: ScanResult) {
-    val lines = remember(r) { scanLines(r, "Notice scan") }
+    val lang = Prefs.language(LocalContext.current)
+    val lines = remember(r, lang) { scanLines(r, ScanCopy.noticeScan(lang), lang) }
     val stage = rememberStage(r, verdictSchedule(tallyRows(lines.size)))
     val revealed = (stage - 2).coerceAtLeast(0)
     val locked = revealed >= tallyRows(lines.size) && stage >= 2
 
-    val (sign, headline, tone) = when (r.verdict) {
-        Verdict.SCAM -> Triple("Scam", "This is a scam notice", Tone.Danger)
-        Verdict.SUSPICIOUS -> Triple("Suspicious", "This looks like a scam", Tone.Checking)
-        Verdict.UNCLEAR -> Triple("No scam signs", "No known scam phrases found", Tone.Neutral)
-        Verdict.UNREADABLE -> Triple("Unreadable", "Kaavalu couldn’t read that", Tone.Neutral)
+    val tone = when (r.verdict) {
+        Verdict.SCAM -> Tone.Danger
+        Verdict.SUSPICIOUS -> Tone.Checking
+        else -> Tone.Neutral
     }
+    val sign = ScanCopy.verdictSign(lang, r.verdict.name)
+    val headline = ScanCopy.verdictHeadline(lang, r.verdict.name)
 
     Sheet(padding = Space.xl, spacing = Space.md) {
         VerdictHead(sign, headline, tone, locked = locked)
 
         when (r.verdict) {
             Verdict.SCAM, Verdict.SUSPICIOUS -> StageIn(visible = stage >= 1, from = 24) {
-                Instruction("Do not reply, do not pay, do not call the number on it.", tone)
+                Instruction(ScanCopy.instruction(lang), tone)
             }
 
             Verdict.UNCLEAR -> Text(
-                "That doesn’t prove it’s real. A real agency sends a letter by post, not on " +
-                    "WhatsApp. Ask your family before you do anything it asks.",
+                ScanCopy.unclearBody(lang),
                 style = MaterialTheme.typography.bodyLarge,
                 color = Ink2,
             )
 
             Verdict.UNREADABLE -> Text(
-                "Almost no text came back. Retake it closer, in good light, without a shadow " +
-                    "across the page — or pick the original screenshot, which is always sharper.",
+                ScanCopy.unreadableBody(lang),
                 style = MaterialTheme.typography.bodyLarge,
                 color = Ink2,
             )
